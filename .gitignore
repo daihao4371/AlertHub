@@ -21,6 +21,10 @@ web/
 package-lock.json
 package.json
 
+# 推送脚本（仅本地使用）
+push-backend.sh
+push-frontend.sh
+
 # Editor directories and files
 .idea/workspace.xml
 .vscode/*

@@ -1,21 +1,10 @@
 
-<p align="center">
-  <a href="https://github.com/w8t-io/WatchAlert"> 
-    <img src="WatchAlert.png" alt="cloud native monitoring" width="200" height="auto" /></a>
-</p>
+
 
 <p align="center">
   <b>🌐 WatchAlert —— 云原生环境下的轻量级智能监控告警引擎</b>
 </p>
 
-<p align="center">
-<a href="https://github.com/w8t-io/WatchAlert/graphs/contributors">
-  <img alt="GitHub contributors" src="https://img.shields.io/github/contributors-anon/w8t-io/WatchAlert"/></a>
-<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/w8t-io/WatchAlert">
-<img alt="GitHub forks" src="https://img.shields.io/github/forks/w8t-io/WatchAlert">
-<img alt="GitHub Repo issues" src="https://img.shields.io/github/issues/w8t-io/WatchAlert">
-<img alt="GitHub Repo issues closed" src="https://img.shields.io/github/issues-closed/w8t-io/WatchAlert">
-<img alt="License" src="https://img.shields.io/badge/license-Apache--2.0-blue"/>
 
 ## 💎 WatchAlert 是什么？
 🎯 **专注可观测性与稳定性，为运维提效降本**
@@ -83,8 +72,4 @@ WatchAlert 是一款专为云原生环境设计 的轻量级监控告警引擎�
 |   ![notice](assets/notice.png)    | ![duty](assets/duty.png)            |
 |  ![probing](assets/probing.png)   | ![datasource](assets/datasource.png) |
 |     ![user](assets/user.png)      | ![log](assets/log.png)              |
-
-## 🎸 支持
-- 如果你觉得 WatchAlert 还不错，可以通过 Star 来表示你的喜欢
-- 在公司或个人项目中使用 WatchAlert，并帮忙推广给伙伴使用
 
