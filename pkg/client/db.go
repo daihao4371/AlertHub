@@ -70,7 +70,8 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.Comment{},
 		&models.ExporterMonitorConfig{},
 		&models.ExporterReportSchedule{},
-		&models.ExporterMonitorSnapshot{},
+		&models.ExporterInspection{},       // 新增: 巡检记录主表
+		&models.ExporterInspectionDetail{}, // 新增: 巡检明细表
 	)
 	if err != nil {
 		logc.Error(context.Background(), err.Error())

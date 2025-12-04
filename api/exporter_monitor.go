@@ -28,6 +28,7 @@ func (exporterMonitorController exporterMonitorController) API(gin *gin.RouterGr
 		// 配置管理
 		a.POST("config", exporterMonitorController.SaveConfig)
 		a.POST("schedule", exporterMonitorController.SaveSchedule)
+		a.POST("autoRefresh", exporterMonitorController.UpdateAutoRefresh)
 
 		// 手动触发推送
 		a.POST("report/send", exporterMonitorController.SendReport)
@@ -45,8 +46,6 @@ func (exporterMonitorController exporterMonitorController) API(gin *gin.RouterGr
 		b.GET("history", exporterMonitorController.GetHistory)
 		b.GET("config", exporterMonitorController.GetConfig)
 		b.GET("schedule", exporterMonitorController.GetSchedule)
-		// 自动刷新状态
-		b.POST("autoRefresh", exporterMonitorController.UpdateAutoRefresh)
 	}
 }
 
@@ -58,6 +57,10 @@ func (exporterMonitorController exporterMonitorController) GetStatus(ctx *gin.Co
 
 	Service(ctx, func() (interface{}, interface{}) {
 		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
+
 		return services.ExporterMonitorService.GetRealtimeStatus(
 			tenantId,
 			r.DatasourceId,
@@ -89,6 +92,9 @@ func (exporterMonitorController exporterMonitorController) GetHistory(ctx *gin.C
 
 	Service(ctx, func() (interface{}, interface{}) {
 		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
 		return services.ExporterMonitorService.GetHistory(
 			tenantId,
 			r.DatasourceId,
@@ -103,6 +109,9 @@ func (exporterMonitorController exporterMonitorController) GetHistory(ctx *gin.C
 func (exporterMonitorController exporterMonitorController) GetConfig(ctx *gin.Context) {
 	Service(ctx, func() (interface{}, interface{}) {
 		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
 		return services.ExporterMonitorService.GetConfig(tenantId)
 	})
 }
@@ -114,10 +123,31 @@ func (exporterMonitorController exporterMonitorController) SaveConfig(ctx *gin.C
 	BindJson(ctx, r)
 
 	// 自动填充 TenantId
-	r.TenantId = ctx.GetString("TenantID")
+	tenantId := ctx.GetString("TenantID")
+	if tenantId == "" {
+		tenantId = "default"
+	}
+	r.TenantId = tenantId
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return nil, services.ExporterMonitorService.SaveConfig(*r)
+	})
+}
+
+// UpdateAutoRefresh 更新自动刷新开关
+// POST /api/w8t/exporter/monitor/autoRefresh
+func (exporterMonitorController exporterMonitorController) UpdateAutoRefresh(ctx *gin.Context) {
+	r := new(struct {
+		AutoRefresh bool `json:"autoRefresh"`
+	})
+	BindJson(ctx, r)
+
+	Service(ctx, func() (interface{}, interface{}) {
+		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
+		return nil, services.ExporterMonitorService.UpdateAutoRefresh(tenantId, r.AutoRefresh)
 	})
 }
 
@@ -126,6 +156,9 @@ func (exporterMonitorController exporterMonitorController) SaveConfig(ctx *gin.C
 func (exporterMonitorController exporterMonitorController) GetSchedule(ctx *gin.Context) {
 	Service(ctx, func() (interface{}, interface{}) {
 		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
 		return services.ExporterMonitorService.GetSchedule(tenantId)
 	})
 }
@@ -137,7 +170,11 @@ func (exporterMonitorController exporterMonitorController) SaveSchedule(ctx *gin
 	BindJson(ctx, r)
 
 	// 自动填充 TenantId
-	r.TenantId = ctx.GetString("TenantID")
+	tenantId := ctx.GetString("TenantID")
+	if tenantId == "" {
+		tenantId = "default"
+	}
+	r.TenantId = tenantId
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return nil, services.ExporterMonitorService.SaveSchedule(*r)
@@ -157,22 +194,13 @@ func (exporterMonitorController exporterMonitorController) SendReport(ctx *gin.C
 
 	Service(ctx, func() (interface{}, interface{}) {
 		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
 		return nil, services.ExporterMonitorService.SendReport(
 			tenantId,
 			r.NoticeGroups,
 			r.ReportFormat,
 		)
-	})
-}
-
-// UpdateAutoRefresh 更新自动刷新状态
-// POST /api/w8t/exporter/monitor/autoRefresh
-func (exporterMonitorController exporterMonitorController) UpdateAutoRefresh(ctx *gin.Context) {
-	r := new(types.RequestExporterMonitorAutoRefresh)
-	BindJson(ctx, r)
-
-	Service(ctx, func() (interface{}, interface{}) {
-		tenantId := ctx.GetString("TenantID")
-		return nil, services.ExporterMonitorService.UpdateAutoRefresh(tenantId, r.AutoRefresh)
 	})
 }

@@ -407,8 +407,8 @@ func PermissionsInfo() map[string]UserPermissions {
 			Key: "发送Exporter巡检报告",
 			API: "/api/w8t/exporter/monitor/report/send",
 		},
-		"exporterMonitorAutoRefresh": {
-			Key: "自动刷新Exporter监控数据",
+		"exporterMonitorUpdateAutoRefresh": {
+			Key: "更新Exporter自动刷新状态",
 			API: "/api/w8t/exporter/monitor/autoRefresh",
 		},
 	}

@@ -182,24 +182,23 @@ func initQuickActionConfig(config models.QuickActionConfig) {
 }
 
 // exporterMonitorScheduler Exporter 健康巡检定时任务
-// 任务1: 每 3 小时采集一次所有 Exporter 状态
-// 任务2: 每 6 小时记录一次历史快照
+// 每小时检查一次,如果当前时间匹配租户配置的巡检时间,则执行巡检
 func exporterMonitorScheduler(ctx *ctx.Context) {
-	// 任务1: 每 3 小时采集一次
-	tools.NewCronjob("0 */3 * * *", func() {
-		err := services.ExporterMonitorService.CollectAll()
+	// 立即执行一次检查 (处理首次启动的情况)
+	go func() {
+		err := services.ExporterMonitorService.InspectAll()
 		if err != nil {
-			logc.Errorf(ctx.Ctx, "Exporter 采集任务失败: %s", err.Error())
+			logc.Errorf(ctx.Ctx, "Exporter 初始化巡检失败: %s", err.Error())
+		}
+	}()
+
+	// 每小时的第0分钟执行检查 (例如: 09:00, 10:00, 21:00)
+	tools.NewCronjob("0 * * * *", func() {
+		err := services.ExporterMonitorService.InspectAll()
+		if err != nil {
+			logc.Errorf(ctx.Ctx, "Exporter 巡检任务失败: %s", err.Error())
 		}
 	})
 
-	// 任务2: 每 6 小时记录快照
-	tools.NewCronjob("0 */6 * * *", func() {
-		err := services.ExporterMonitorService.RecordSnapshot()
-		if err != nil {
-			logc.Errorf(ctx.Ctx, "Exporter 快照记录失败: %s", err.Error())
-		}
-	})
-
-	logc.Info(ctx.Ctx, "Exporter 健康巡检定时任务已启动")
+	logc.Info(ctx.Ctx, "Exporter 健康巡检定时任务已启动 (每小时检查)")
 }

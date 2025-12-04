@@ -19,7 +19,6 @@ type (
 		ProviderPools() *ProviderPoolStore
 		FaultCenter() FaultCenterCacheInterface
 		PendingRecover() PendingRecoverCacheInterface
-		ExporterMonitor() ExporterMonitorCacheInterface
 	}
 )
 
@@ -43,7 +42,4 @@ func (e entryCache) FaultCenter() FaultCenterCacheInterface {
 }
 func (e entryCache) PendingRecover() PendingRecoverCacheInterface {
 	return newPendingRecoverCacheInterface(e.redis)
-}
-func (e entryCache) ExporterMonitor() ExporterMonitorCacheInterface {
-	return newExporterMonitorCacheInterface(e.redis)
 }

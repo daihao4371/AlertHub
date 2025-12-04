@@ -20,8 +20,3 @@ type RequestExporterMonitorSendReport struct {
 	NoticeGroups []string `json:"noticeGroups" binding:"required"` // 通知组 UUID 列表
 	ReportFormat string   `json:"reportFormat"`                    // simple/detailed
 }
-
-// RequestExporterMonitorAutoRefresh 请求更新自动刷新状态
-type RequestExporterMonitorAutoRefresh struct {
-	AutoRefresh bool `json:"autoRefresh"` // 是否自动刷新
-}
