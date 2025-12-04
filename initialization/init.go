@@ -49,6 +49,9 @@ func InitBasic() {
 	// 定时任务，每年12月1日自动生成次年值班表
 	go autoGenerateNextYearDutySchedule(ctx)
 
+	// 定时任务，Exporter 健康巡检
+	go exporterMonitorScheduler(ctx)
+
 	// 加载静默规则
 	go pushMuteRuleToRedis()
 
@@ -176,4 +179,27 @@ func pushMuteRuleToRedis() {
 func initQuickActionConfig(config models.QuickActionConfig) {
 	templates.SetQuickActionConfig(config)
 	logc.Info(context.Background(), "快捷操作配置已加载")
+}
+
+// exporterMonitorScheduler Exporter 健康巡检定时任务
+// 任务1: 每 3 小时采集一次所有 Exporter 状态
+// 任务2: 每 6 小时记录一次历史快照
+func exporterMonitorScheduler(ctx *ctx.Context) {
+	// 任务1: 每 3 小时采集一次
+	tools.NewCronjob("0 */3 * * *", func() {
+		err := services.ExporterMonitorService.CollectAll()
+		if err != nil {
+			logc.Errorf(ctx.Ctx, "Exporter 采集任务失败: %s", err.Error())
+		}
+	})
+
+	// 任务2: 每 6 小时记录快照
+	tools.NewCronjob("0 */6 * * *", func() {
+		err := services.ExporterMonitorService.RecordSnapshot()
+		if err != nil {
+			logc.Errorf(ctx.Ctx, "Exporter 快照记录失败: %s", err.Error())
+		}
+	})
+
+	logc.Info(ctx.Ctx, "Exporter 健康巡检定时任务已启动")
 }

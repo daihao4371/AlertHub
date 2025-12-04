@@ -20,7 +20,7 @@ func Service(ctx *gin.Context, fu func() (interface{}, interface{})) {
 }
 
 func BindJson(ctx *gin.Context, req interface{}) {
-	err := ctx.ShouldBindJSON(&req)
+	err := ctx.ShouldBindJSON(req)
 	if err != nil {
 		response.Fail(ctx, err.Error(), "failed")
 		ctx.Abort()

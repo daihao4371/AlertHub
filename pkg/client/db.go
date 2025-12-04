@@ -68,6 +68,9 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.AiContentRecord{},
 		&models.ProbingHistory{},
 		&models.Comment{},
+		&models.ExporterMonitorConfig{},
+		&models.ExporterReportSchedule{},
+		&models.ExporterMonitorSnapshot{},
 	)
 	if err != nil {
 		logc.Error(context.Background(), err.Error())

@@ -379,5 +379,37 @@ func PermissionsInfo() map[string]UserPermissions {
 			Key: "提交自定义静默",
 			API: "/api/v1/alert/quick-silence",
 		},
+		"exporterMonitorStatus": {
+			Key: "查看Exporter监控状态",
+			API: "/api/w8t/exporter/monitor/status",
+		},
+		"exporterMonitorHistory": {
+			Key: "查看Exporter监控历史",
+			API: "/api/w8t/exporter/monitor/history",
+		},
+		"exporterMonitorGetConfig": {
+			Key: "获取Exporter监控配置",
+			API: "/api/w8t/exporter/monitor/config",
+		},
+		"exporterMonitorUpdateConfig": {
+			Key: "更新Exporter监控配置",
+			API: "/api/w8t/exporter/monitor/config",
+		},
+		"exporterMonitorGetSchedule": {
+			Key: "获取Exporter报告推送配置",
+			API: "/api/w8t/exporter/monitor/schedule",
+		},
+		"exporterMonitorUpdateSchedule": {
+			Key: "更新Exporter报告推送配置",
+			API: "/api/w8t/exporter/monitor/schedule",
+		},
+		"exporterMonitorSendReport": {
+			Key: "发送Exporter巡检报告",
+			API: "/api/w8t/exporter/monitor/report/send",
+		},
+		"exporterMonitorAutoRefresh": {
+			Key: "自动刷新Exporter监控数据",
+			API: "/api/w8t/exporter/monitor/autoRefresh",
+		},
 	}
 }

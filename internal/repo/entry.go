@@ -37,6 +37,7 @@ type (
 		FaultCenter() InterFaultCenterRepo
 		Ai() InterAiRepo
 		Comment() InterCommentRepo
+		ExporterMonitor() InterExporterMonitorRepo
 	}
 )
 
@@ -85,3 +86,6 @@ func (e *entryRepo) Probing() InterProbingRepo         { return newProbingRepoIn
 func (e *entryRepo) FaultCenter() InterFaultCenterRepo { return newInterFaultCenterRepo(e.db, e.g) }
 func (e *entryRepo) Ai() InterAiRepo                   { return newAiRepoInterface(e.db, e.g) }
 func (e *entryRepo) Comment() InterCommentRepo         { return newCommentInterface(e.db, e.g) }
+func (e *entryRepo) ExporterMonitor() InterExporterMonitorRepo {
+	return newExporterMonitorInterface(e.db, e.g)
+}
