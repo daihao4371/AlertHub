@@ -18,6 +18,7 @@ type (
 		Update(t models.Tenant) error
 		Delete(tenantId string) error
 		List(userId string) (data []models.Tenant, err error)
+		GetAll() (data []models.Tenant, err error)
 		Get(tenantId string) (data models.Tenant, err error)
 		CreateTenantLinkedUserRecord(t models.TenantLinkedUsers) error
 		AddTenantLinkedUsers(tenantId string, users []models.TenantUser, userRole string) error
@@ -160,6 +161,18 @@ func (tr TenantRepo) Get(tenantId string) (data models.Tenant, err error) {
 	}
 
 	return d, nil
+}
+
+// GetAll 获取所有租户列表
+// 供 Exporter 调度器等系统模块使用，查询所有租户执行全局任务
+func (tr TenantRepo) GetAll() (data []models.Tenant, err error) {
+	var tenants []models.Tenant
+	err = tr.db.Model(&models.Tenant{}).Find(&tenants).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return tenants, nil
 }
 
 // CreateTenantLinkedUserRecord 创建租户关联的用户记录

@@ -119,11 +119,21 @@ func (s *Scheduler) registerCleanupJob() error {
 
 // loadAndRegisterInspectionJobs 加载并注册所有启用的巡检任务
 func (s *Scheduler) loadAndRegisterInspectionJobs() error {
-	// TODO: 从数据库查询所有租户的巡检配置
-	// 当前简化实现: 查询 default 租户的配置
-	tenantIds := []string{"default"} // 实际应该查询所有租户
+	// 从数据库查询所有租户
+	tenants, err := s.ctx.DB.Tenant().GetAll()
+	if err != nil {
+		logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 查询租户列表失败: %v", err)
+		return err
+	}
 
-	for _, tenantId := range tenantIds {
+	// 如果没有租户，使用默认租户
+	if len(tenants) == 0 {
+		logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 未找到任何租户，使用默认租户 'default'")
+		tenants = append(tenants, models.Tenant{ID: "default"})
+	}
+
+	for _, tenant := range tenants {
+		tenantId := tenant.ID
 		config, err := s.ctx.DB.ExporterMonitor().GetConfig(tenantId)
 		if err != nil {
 			logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 获取租户 %s 的巡检配置失败: %v", tenantId, err)
@@ -229,10 +239,21 @@ func (s *Scheduler) convertInspectionTimesToCron(times []string) (string, error)
 
 // loadAndRegisterReportJobs 加载并注册所有启用的报告推送任务
 func (s *Scheduler) loadAndRegisterReportJobs() error {
-	// TODO: 从数据库查询所有租户的推送配置
-	tenantIds := []string{"default"}
+	// 从数据库查询所有租户
+	tenants, err := s.ctx.DB.Tenant().GetAll()
+	if err != nil {
+		logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 查询租户列表失败: %v", err)
+		return err
+	}
 
-	for _, tenantId := range tenantIds {
+	// 如果没有租户，使用默认租户
+	if len(tenants) == 0 {
+		logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 未找到任何租户，使用默认租户 'default'")
+		tenants = append(tenants, models.Tenant{ID: "default"})
+	}
+
+	for _, tenant := range tenants {
+		tenantId := tenant.ID
 		schedule, err := s.ctx.DB.ExporterMonitor().GetSchedule(tenantId)
 		if err != nil {
 			logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 获取租户 %s 的推送配置失败: %v", tenantId, err)
@@ -351,10 +372,21 @@ func (s *Scheduler) registerReportJobs(tenantId string, schedule models.Exporter
 
 // cleanupHistoryData 清理过期的历史数据
 func (s *Scheduler) cleanupHistoryData() error {
-	// TODO: 从数据库查询所有租户
-	tenantIds := []string{"default"}
+	// 从数据库查询所有租户
+	tenants, err := s.ctx.DB.Tenant().GetAll()
+	if err != nil {
+		logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 查询租户列表失败: %v", err)
+		return err
+	}
 
-	for _, tenantId := range tenantIds {
+	// 如果没有租户，使用默认租户
+	if len(tenants) == 0 {
+		logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 未找到任何租户，使用默认租户 'default'")
+		tenants = append(tenants, models.Tenant{ID: "default"})
+	}
+
+	for _, tenant := range tenants {
+		tenantId := tenant.ID
 		// 获取配置的保留天数
 		config, err := s.ctx.DB.ExporterMonitor().GetConfig(tenantId)
 		if err != nil {
