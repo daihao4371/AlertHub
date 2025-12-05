@@ -31,6 +31,9 @@ type InterExporterMonitorService interface {
 	GetSchedule(tenantId string) (models.ExporterReportSchedule, error)
 	SaveSchedule(schedule models.ExporterReportSchedule) error
 
+	// 调度器配置重载
+	ReloadSchedulerConfig(tenantId string) error
+
 	// 报告相关
 	SendReport(tenantId string, noticeGroups []string, reportFormat string) error
 }
@@ -135,4 +138,10 @@ func (s *exporterMonitorService) SendReport(tenantId string, noticeGroups []stri
 	// 4. 调用 Notifier 推送通知
 	notifier := exporter.NewNotifier(s.ctx)
 	return notifier.SendToNoticeGroups(tenantId, noticeGroups, content)
+}
+
+// ReloadSchedulerConfig 重载调度器配置
+// 保存配置后调用,热更新调度器任务
+func (s *exporterMonitorService) ReloadSchedulerConfig(tenantId string) error {
+	return exporter.ReloadGlobalSchedulerConfig(tenantId)
 }

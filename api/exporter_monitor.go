@@ -130,7 +130,15 @@ func (exporterMonitorController exporterMonitorController) SaveConfig(ctx *gin.C
 	r.TenantId = tenantId
 
 	Service(ctx, func() (interface{}, interface{}) {
-		return nil, services.ExporterMonitorService.SaveConfig(*r)
+		err := services.ExporterMonitorService.SaveConfig(*r)
+		if err != nil {
+			return nil, err
+		}
+
+		// 配置保存成功后,重新加载调度器配置
+		_ = services.ExporterMonitorService.ReloadSchedulerConfig(tenantId)
+
+		return nil, nil
 	})
 }
 
@@ -177,7 +185,15 @@ func (exporterMonitorController exporterMonitorController) SaveSchedule(ctx *gin
 	r.TenantId = tenantId
 
 	Service(ctx, func() (interface{}, interface{}) {
-		return nil, services.ExporterMonitorService.SaveSchedule(*r)
+		err := services.ExporterMonitorService.SaveSchedule(*r)
+		if err != nil {
+			return nil, err
+		}
+
+		// 配置保存成功后,重新加载调度器配置
+		_ = services.ExporterMonitorService.ReloadSchedulerConfig(tenantId)
+
+		return nil, nil
 	})
 }
 

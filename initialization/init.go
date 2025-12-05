@@ -13,6 +13,7 @@ import (
 	"watchAlert/internal/repo"
 	"watchAlert/internal/services"
 	"watchAlert/pkg/ai"
+	"watchAlert/pkg/exporter"
 	"watchAlert/pkg/templates"
 	"watchAlert/pkg/tools"
 
@@ -181,24 +182,21 @@ func initQuickActionConfig(config models.QuickActionConfig) {
 	logc.Info(context.Background(), "快捷操作配置已加载")
 }
 
-// exporterMonitorScheduler Exporter 健康巡检定时任务
-// 每小时检查一次,如果当前时间匹配租户配置的巡检时间,则执行巡检
+// exporterMonitorScheduler Exporter 健康巡检调度器
+// 使用 pkg/exporter/Scheduler 管理:
+// 1. 定时巡检任务 (根据 InspectionTimes 配置)
+// 2. 定时报告推送任务 (根据 CronExpression 配置)
+// 3. 历史数据清理任务 (每天凌晨2:00)
 func exporterMonitorScheduler(ctx *ctx.Context) {
-	// 立即执行一次检查 (处理首次启动的情况)
-	go func() {
-		err := services.ExporterMonitorService.InspectAll()
-		if err != nil {
-			logc.Errorf(ctx.Ctx, "Exporter 初始化巡检失败: %s", err.Error())
-		}
-	}()
+	scheduler := exporter.NewScheduler(ctx)
 
-	// 每小时的第0分钟执行检查 (例如: 09:00, 10:00, 21:00)
-	tools.NewCronjob("0 * * * *", func() {
-		err := services.ExporterMonitorService.InspectAll()
-		if err != nil {
-			logc.Errorf(ctx.Ctx, "Exporter 巡检任务失败: %s", err.Error())
-		}
-	})
+	if err := scheduler.Start(); err != nil {
+		logc.Errorf(ctx.Ctx, "Exporter 巡检调度器启动失败: %s", err.Error())
+		return
+	}
 
-	logc.Info(ctx.Ctx, "Exporter 健康巡检定时任务已启动 (每小时检查)")
+	// 设置为全局实例,供其他包使用
+	exporter.SetGlobalScheduler(scheduler)
+
+	logc.Info(ctx.Ctx, "Exporter 巡检调度器启动成功")
 }
