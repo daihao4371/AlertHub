@@ -48,7 +48,7 @@ func newInterExporterMonitorService(ctx *ctx.Context) InterExporterMonitorServic
 // 委托给 pkg/exporter.Inspector 处理业务逻辑
 func (s *exporterMonitorService) InspectAll() error {
 	inspector := exporter.NewInspector(s.ctx)
-	return inspector.InspectAll()
+	return inspector.InspectAll(true)
 }
 
 // InspectDatasource 巡检单个 Prometheus 数据源并写入数据库
