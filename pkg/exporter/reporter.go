@@ -116,48 +116,34 @@ func (r *Reporter) GenerateReportContent(
 		content += "🎉 本次巡检未发现任何异常，所有 Exporter 均正常运行。\n\n"
 	}
 
-	// 详细版: 显示所有 Exporter 状态
+	// 详细版: 显示异常详情（只显示有问题的 Exporter）
 	if reportFormat == "detailed" {
-		content += "### 📋 所有 Exporter 状态\n\n"
-		upList := make([]models.ExporterStatus, 0)
 		unknownList := make([]models.ExporterStatus, 0)
 
+		// 收集未知状态的 Exporter
 		for _, exp := range exporters {
-			if exp.Status == "up" {
-				upList = append(upList, exp)
-			} else if exp.Status == "unknown" {
+			if exp.Status == "unknown" {
 				unknownList = append(unknownList, exp)
 			}
 		}
 
-		// 正常列表 - 使用表格格式
-		if len(upList) > 0 {
-			content += fmt.Sprintf("#### ✅ 正常 (%d)\n\n", len(upList))
-			content += "| # | 实例名称 | Job | 数据源 |\n"
-			content += "|---|---------|-----|--------|\n"
-			for i, exp := range upList {
-				instanceName := exp.Instance
-				if len(instanceName) > 25 {
-					instanceName = instanceName[:22] + "..."
-				}
-				content += fmt.Sprintf("| %d | %s | `%s` | %s |\n",
-					i+1, instanceName, exp.Job, exp.DatasourceName)
-			}
-			content += "\n"
-		}
-
-		// 未知状态列表 - 使用表格格式
+		// 只在有未知状态时显示该段落
 		if len(unknownList) > 0 {
+			content += "### 📋 异常详情\n\n"
 			content += fmt.Sprintf("#### ❓ 未知状态 (%d)\n\n", len(unknownList))
-			content += "| # | 实例名称 | Job | 数据源 |\n"
-			content += "|---|---------|-----|--------|\n"
+			content += "| # | 实例名称 | Job | 数据源 | 采集地址 | 最后采集时间 |\n"
+			content += "|---|---------|-----|--------|----------|-------------|\n"
 			for i, exp := range unknownList {
 				instanceName := exp.Instance
-				if len(instanceName) > 25 {
-					instanceName = instanceName[:22] + "..."
+				if len(instanceName) > 20 {
+					instanceName = instanceName[:17] + "..."
 				}
-				content += fmt.Sprintf("| %d | %s | `%s` | %s |\n",
-					i+1, instanceName, exp.Job, exp.DatasourceName)
+				scrapeUrl := exp.ScrapeUrl
+				if len(scrapeUrl) > 30 {
+					scrapeUrl = scrapeUrl[:27] + "..."
+				}
+				content += fmt.Sprintf("| %d | %s | `%s` | %s | `%s` | %s |\n",
+					i+1, instanceName, exp.Job, exp.DatasourceName, scrapeUrl, exp.LastScrapeTime.Format("01-02 15:04"))
 			}
 			content += "\n"
 		}

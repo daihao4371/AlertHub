@@ -2,13 +2,14 @@ package exporter
 
 import (
 	"fmt"
-	"github.com/bytedance/sonic"
-	"github.com/zeromicro/go-zero/core/logc"
 	"strings"
 	"time"
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/models"
 	"watchAlert/pkg/sender"
+
+	"github.com/bytedance/sonic"
+	"github.com/zeromicro/go-zero/core/logc"
 )
 
 // 常量定义
@@ -333,7 +334,7 @@ func (p *ContentParser) parseSection(line string) []map[string]interface{} {
 		{func(l string) bool { return strings.Contains(l, "📈 总体统计") }, p.parseStatisticsSection},
 		{func(l string) bool { return strings.Contains(l, "⚠️ 异常 Exporter 列表") }, p.parseDownListSection},
 		{func(l string) bool { return strings.Contains(l, "✅ 所有 Exporter 运行正常") }, p.parseNormalSection},
-		{func(l string) bool { return strings.Contains(l, "📋 所有 Exporter 状态") }, p.parseDetailedSection},
+		{func(l string) bool { return strings.Contains(l, "📋 异常详情") }, p.parseDetailedSection},
 		{func(l string) bool { return strings.Contains(l, "📉 近 7 日趋势") }, p.parseTrendsSection},
 	}
 
@@ -411,10 +412,10 @@ func (p *ContentParser) parseStatisticsRow(line string, stats *Statistics) {
 
 	// 使用查找表解析字段
 	fieldParsers := map[string]func(string){
-		"总数":   func(v string) { stats.TotalCount, _ = parseInteger(v) },
-		"正常":   func(v string) { stats.UpCount, _ = parseInteger(v) },
-		"异常":   func(v string) { stats.DownCount, _ = parseInteger(v) },
-		"未知":   func(v string) { stats.UnknownCount, _ = parseInteger(v) },
+		"总数":  func(v string) { stats.TotalCount, _ = parseInteger(v) },
+		"正常":  func(v string) { stats.UpCount, _ = parseInteger(v) },
+		"异常":  func(v string) { stats.DownCount, _ = parseInteger(v) },
+		"未知":  func(v string) { stats.UnknownCount, _ = parseInteger(v) },
 		"可用率": func(v string) { stats.AvailabilityRate, _ = parsePercentage(v) },
 	}
 
@@ -434,6 +435,9 @@ func (p *ContentParser) parseDownListSection() []map[string]interface{} {
 	if len(downList) == 0 {
 		return nil
 	}
+
+	// 提取错误详情并关联到 downList
+	p.extractErrorDetails(downList)
 
 	p.hasDown = true
 	return buildDownListCard(downList)
@@ -464,6 +468,124 @@ func (p *ContentParser) extractDownList() []DownItem {
 	}
 
 	return items
+}
+
+// extractErrorDetails 提取并关联错误详情到异常列表
+func (p *ContentParser) extractErrorDetails(downList []DownItem) {
+	// 查找 "🔍 错误详情" 段落
+	errorSectionFound := false
+	for p.index < len(p.lines) {
+		line := strings.TrimSpace(p.lines[p.index])
+
+		// 找到错误详情段落
+		if strings.Contains(line, "🔍 错误详情") {
+			errorSectionFound = true
+			p.index++
+			break
+		}
+
+		// 遇到新的主段落，停止查找
+		if strings.HasPrefix(line, "###") {
+			return
+		}
+
+		p.index++
+	}
+
+	if !errorSectionFound {
+		return
+	}
+
+	// 解析错误详情
+	currentInstance := ""
+	currentJob := ""
+	errorBuffer := ""
+	inCodeBlock := false
+
+	for p.index < len(p.lines) {
+		line := strings.TrimSpace(p.lines[p.index])
+
+		// 遇到新的主段落，停止解析
+		if strings.HasPrefix(line, "###") {
+			// 保存最后一个错误
+			if currentInstance != "" && errorBuffer != "" {
+				matchAndSetError(downList, currentInstance, currentJob, errorBuffer)
+			}
+			break
+		}
+
+		// 检测实例行：**实例名** (`Job`):
+		if strings.HasPrefix(line, "**") && strings.Contains(line, "(`") && strings.HasSuffix(line, "):") {
+			// 保存上一个错误
+			if currentInstance != "" && errorBuffer != "" {
+				matchAndSetError(downList, currentInstance, currentJob, errorBuffer)
+			}
+
+			// 解析新的实例信息
+			currentInstance, currentJob = parseErrorInstanceLine(line)
+			errorBuffer = ""
+			inCodeBlock = false
+		} else if line == "```" {
+			// 代码块开始/结束
+			inCodeBlock = !inCodeBlock
+		} else if inCodeBlock && line != "" {
+			// 收集错误信息
+			if errorBuffer != "" {
+				errorBuffer += " "
+			}
+			errorBuffer += line
+		}
+
+		p.index++
+	}
+
+	// 保存最后一个错误
+	if currentInstance != "" && errorBuffer != "" {
+		matchAndSetError(downList, currentInstance, currentJob, errorBuffer)
+	}
+}
+
+// parseErrorInstanceLine 解析错误详情的实例行
+// 格式：**10.10.217.225:9100** (`node_exporter`):
+func parseErrorInstanceLine(line string) (string, string) {
+	// 移除开头的 **
+	line = strings.TrimPrefix(line, "**")
+
+	// 找到第一个 ** 和 (`
+	instanceEnd := strings.Index(line, "**")
+	if instanceEnd == -1 {
+		return "", ""
+	}
+
+	instance := strings.TrimSpace(line[:instanceEnd])
+
+	// 提取 Job
+	jobStart := strings.Index(line, "(`")
+	jobEnd := strings.Index(line, "`)")
+	if jobStart == -1 || jobEnd == -1 {
+		return instance, ""
+	}
+
+	job := strings.TrimSpace(line[jobStart+2 : jobEnd])
+	return instance, job
+}
+
+// matchAndSetError 匹配并设置错误信息到对应的 DownItem
+func matchAndSetError(downList []DownItem, instance, job, errorMsg string) {
+	for i := range downList {
+		// 清理 instance 中的格式标记进行匹配
+		itemInstance := strings.ReplaceAll(downList[i].Instance, "**", "")
+		itemInstance = strings.ReplaceAll(itemInstance, "`", "")
+		itemInstance = strings.TrimSpace(itemInstance)
+
+		itemJob := strings.ReplaceAll(downList[i].Job, "`", "")
+		itemJob = strings.TrimSpace(itemJob)
+
+		if itemInstance == instance && itemJob == job {
+			downList[i].Error = errorMsg
+			return
+		}
+	}
 }
 
 // skipTableHeader 跳过表格头部
@@ -615,6 +737,7 @@ type DownItem struct {
 	Datasource string
 	URL        string
 	Time       string
+	Error      string // 新增错误详情字段
 }
 
 // ========== 卡片构建器 ==========
@@ -623,20 +746,45 @@ type DownItem struct {
 func buildStatisticsCard(stats *Statistics) []map[string]interface{} {
 	elements := []map[string]interface{}{}
 
-	// 状态标题
+	// 状态行 - 更突出
 	statusIcon := getStatusIcon(stats.Status)
+	statusColor := "green"
+	if stats.DownCount > 0 {
+		statusColor = "red"
+	} else if stats.UnknownCount > 0 {
+		statusColor = "orange"
+	}
+
 	elements = append(elements, createTextElement(
-		fmt.Sprintf("**📈 总体统计**\n\n%s **状态**: %s", statusIcon, stats.Status),
+		fmt.Sprintf("%s **状态**: <font color='%s'>%s</font>", statusIcon, statusColor, stats.Status),
 	))
 
-	// 统计列
-	columns := buildStatisticsColumns(stats)
+	// 第一行：总数和可用率
+	row1 := []map[string]interface{}{
+		createColumn("📊 总数", fmt.Sprintf("**%d**", stats.TotalCount), ""),
+		createColumn("📈 可用率", fmt.Sprintf("**%.1f%%**", stats.AvailabilityRate), getRateColor(stats.AvailabilityRate)),
+	}
+	elements = append(elements, map[string]interface{}{
+		"tag":              "column_set",
+		"flex_mode":        "none",
+		"background_style": "grey",
+		"columns":          row1,
+	})
+
+	// 第二行：正常和异常
+	row2 := []map[string]interface{}{
+		createColumn("✅ 正常", fmt.Sprintf("**%d**", stats.UpCount), "green"),
+		createColumn("❌ 异常", fmt.Sprintf("**%d**", stats.DownCount), "red"),
+	}
 	elements = append(elements, map[string]interface{}{
 		"tag":              "column_set",
 		"flex_mode":        "none",
 		"background_style": "default",
-		"columns":          columns,
+		"columns":          row2,
 	})
+
+	// 添加分隔线，增加视觉层次
+	elements = append(elements, map[string]interface{}{"tag": "hr"})
 
 	return elements
 }
@@ -699,9 +847,10 @@ func buildDownListCard(downList []DownItem) []map[string]interface{} {
 	for idx, item := range downList {
 		content := buildDownItemContent(item)
 		elements = append(elements, map[string]interface{}{
-			"tag": "note",
-			"elements": []map[string]interface{}{
-				{"tag": "lark_md", "content": content},
+			"tag": "div",
+			"text": map[string]interface{}{
+				"tag":     "lark_md",
+				"content": content,
 			},
 		})
 
@@ -714,12 +863,34 @@ func buildDownListCard(downList []DownItem) []map[string]interface{} {
 	return elements
 }
 
-// buildDownItemContent 构建异常项内容
+// buildDownItemContent 构建异常项内容（每个字段独占一行，美观易读）
 func buildDownItemContent(item DownItem) string {
-	return fmt.Sprintf(
-		"**%s. %s**\n\n🏷️ **Job**: `%s`\n\n📦 **数据源**: %s\n\n🔗 **采集地址**: `%s`\n\n⏰ **最后采集**: %s",
-		item.Index, item.Instance, item.Job, item.Datasource, item.URL, item.Time,
-	)
+	// 移除截断，完整显示实例名
+	instance := item.Instance
+	// 清理 markdown 格式
+	instance = strings.ReplaceAll(instance, "**", "")
+	instance = strings.ReplaceAll(instance, "`", "")
+
+	job := strings.ReplaceAll(item.Job, "`", "")
+	datasource := strings.TrimSpace(item.Datasource)
+
+	// 每个字段独占一行
+	content := fmt.Sprintf("**%s. 实例**: %s", item.Index, instance)
+	content += fmt.Sprintf("\n**Job**: %s", job)
+	content += fmt.Sprintf("\n**数据源**: %s", datasource)
+	content += fmt.Sprintf("\n**采集时间**: %s", item.Time)
+
+	// 错误详情（如果有）
+	if item.Error != "" {
+		errorMsg := cleanValue(item.Error)
+		// 限制错误信息长度为 150 字符
+		if len(errorMsg) > 150 {
+			errorMsg = errorMsg[:147] + "..."
+		}
+		content += fmt.Sprintf("\n**错误详情**: %s", errorMsg)
+	}
+
+	return content
 }
 
 // createTextElement 创建文本元素

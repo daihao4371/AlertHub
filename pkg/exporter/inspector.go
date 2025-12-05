@@ -22,9 +22,11 @@ func NewInspector(c *ctx.Context) *Inspector {
 }
 
 // InspectAll 巡检所有已启用的 Prometheus 数据源
-// 只在当前时间匹配租户配置的巡检时间时才执行
+// forceInspect: 是否强制执行巡检(忽略时间检查)
+// - false: 只在当前时间匹配租户配置的巡检时间时才执行
+// - true: 忽略时间检查,立即执行巡检(用于应用启动时刷新状态)
 // 特殊情况: 如果租户没有任何历史巡检记录,则立即执行一次初始化巡检
-func (ins *Inspector) InspectAll() error {
+func (ins *Inspector) InspectAll(forceInspect bool) error {
 	// 获取当前时间 (HH:MM 格式)
 	currentTime := time.Now().Format("15:04")
 
@@ -43,26 +45,32 @@ func (ins *Inspector) InspectAll() error {
 		shouldInspect := false
 		isFirstInspection := true // 默认为首次巡检
 
-		// 1. 检查是否有历史巡检记录 (任意数据源有记录就不是首次)
-		for _, dsId := range config.DatasourceIds {
-			latestInspection, _ := ins.ctx.DB.ExporterMonitor().GetLatestInspection(tenantId, dsId)
-			if latestInspection != nil {
-				// 发现有历史记录,不是首次巡检
-				isFirstInspection = false
-				break
-			}
-		}
-
-		// 2. 如果是首次巡检,立即执行
-		if isFirstInspection {
+		// 1. 如果强制执行,直接巡检
+		if forceInspect {
 			shouldInspect = true
-			logc.Infof(ins.ctx.Ctx, "检测到首次巡检: tenantId=%s, 立即执行初始化巡检", tenantId)
+			logc.Infof(ins.ctx.Ctx, "强制巡检: tenantId=%s", tenantId)
 		} else {
-			// 3. 否则检查当前时间是否在配置的巡检时间点中
-			for _, inspectionTime := range config.InspectionTimes {
-				if inspectionTime == currentTime {
-					shouldInspect = true
+			// 2. 检查是否有历史巡检记录 (任意数据源有记录就不是首次)
+			for _, dsId := range config.DatasourceIds {
+				latestInspection, _ := ins.ctx.DB.ExporterMonitor().GetLatestInspection(tenantId, dsId)
+				if latestInspection != nil {
+					// 发现有历史记录,不是首次巡检
+					isFirstInspection = false
 					break
+				}
+			}
+
+			// 3. 如果是首次巡检,立即执行
+			if isFirstInspection {
+				shouldInspect = true
+				logc.Infof(ins.ctx.Ctx, "检测到首次巡检: tenantId=%s, 立即执行初始化巡检", tenantId)
+			} else {
+				// 4. 否则检查当前时间是否在配置的巡检时间点中
+				for _, inspectionTime := range config.InspectionTimes {
+					if inspectionTime == currentTime {
+						shouldInspect = true
+						break
+					}
 				}
 			}
 		}

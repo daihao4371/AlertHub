@@ -77,6 +77,21 @@ func (s *Scheduler) Start() error {
 	// 4. 启动 cron 调度器
 	s.cron.Start()
 
+	// 5. 应用启动时立即执行一次全量巡检 (确保数据是最新的)
+	// 这可以避免应用重启后使用旧数据的问题
+	if len(s.inspectionJobs) > 0 {
+		logc.Info(s.ctx.Ctx, "[ExporterScheduler] 应用启动，立即执行一次全量巡检...")
+		go func() {
+			inspector := NewInspector(s.ctx)
+			// 强制执行巡检，忽略时间检查
+			if err := inspector.InspectAll(true); err != nil {
+				logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 启动时巡检失败: %v", err)
+			} else {
+				logc.Info(s.ctx.Ctx, "[ExporterScheduler] 启动时巡检完成")
+			}
+		}()
+	}
+
 	logc.Info(s.ctx.Ctx, "[ExporterScheduler] Exporter 巡检调度器启动成功")
 	logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 已注册 %d 个巡检任务, %d 个租户的推送任务",
 		len(s.inspectionJobs), len(s.reportJobs))
@@ -185,7 +200,8 @@ func (s *Scheduler) registerInspectionJob(tenantId string, inspectionTimes []str
 	entryID, err := s.cron.AddFunc(cronExpr, func() {
 		logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 触发租户 %s 的定时巡检任务...", tenantId)
 		inspector := NewInspector(s.ctx)
-		if err := inspector.InspectAll(); err != nil {
+		// 定时任务按配置的时间执行，不强制
+		if err := inspector.InspectAll(false); err != nil {
 			logc.Errorf(s.ctx.Ctx, "[ExporterScheduler] 租户 %s 巡检失败: %v", tenantId, err)
 		} else {
 			logc.Infof(s.ctx.Ctx, "[ExporterScheduler] 租户 %s 巡检完成", tenantId)
