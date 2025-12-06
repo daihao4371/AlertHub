@@ -52,11 +52,12 @@ jobs:
           ACR_REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
           ACR_NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
           HAS_CREDS="${{ steps.check_acr.outputs.has_creds }}"
-          
+
           echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
           echo "ACR_REGISTRY=${ACR_REGISTRY}" >> $GITHUB_ENV
           echo "ACR_NAMESPACE=${ACR_NAMESPACE}" >> $GITHUB_ENV
-          
+          echo "REPO_NAME=watchalert" >> $GITHUB_ENV
+
           # 根据是否有凭证设置镜像标签
           if [ "${HAS_CREDS}" == "true" ]; then
             echo "IMAGE_TAG=${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:${BRANCH_NAME}" >> $GITHUB_ENV
@@ -73,8 +74,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           # 只有在有凭证时才推送，否则只构建
           push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
-          # 明确设置输出类型，避免缓存问题
-          outputs: type=image
+          # 设置provenance为false，避免推送attestation导致的权限问题
+          provenance: false
           build-args: |
             VERSION=${{ env.BRANCH_NAME }}
           tags: |
