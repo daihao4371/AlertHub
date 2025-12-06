@@ -75,8 +75,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           # 只有在有凭证时才推送，否则只构建
           push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
-          # 明确设置输出类型，避免缓存问题
-          outputs: type=image
+          # 设置provenance为false，避免推送attestation导致的权限问题
+          provenance: false
           build-args: |
             VERSION=${{ env.TAG_NAME }}
           tags: |
