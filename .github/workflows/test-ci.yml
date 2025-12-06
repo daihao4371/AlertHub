@@ -28,8 +28,17 @@ jobs:
       - name: Available platforms
         run: echo ${{ steps.buildx.outputs.platforms }}
 
+      - name: Check ACR credentials
+        id: check_acr
+        run: |
+          if [ -n "${{ secrets.ALIYUN_ACR_USER }}" ] && [ -n "${{ secrets.ALIYUN_ACR_PASSWORD }}" ]; then
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Login to Aliyun Container Registry
-        if: ${{ secrets.ALIYUN_ACR_USER && secrets.ALIYUN_ACR_PASSWORD }}
+        if: steps.check_acr.outputs.has_creds == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}
@@ -49,7 +58,7 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: ${{ secrets.ALIYUN_ACR_USER != '' && secrets.ALIYUN_ACR_PASSWORD != '' }}
+          push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
           build-args: |
             VERSION=${{ env.DATE }}
           tags: |
