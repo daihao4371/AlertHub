@@ -30,6 +30,9 @@ func (exporterMonitorController exporterMonitorController) API(gin *gin.RouterGr
 		a.POST("schedule", exporterMonitorController.SaveSchedule)
 		a.POST("autoRefresh", exporterMonitorController.UpdateAutoRefresh)
 
+		// 手动触发巡检
+		a.POST("inspect", exporterMonitorController.TriggerInspection)
+
 		// 手动触发推送
 		a.POST("report/send", exporterMonitorController.SendReport)
 	}
@@ -217,6 +220,25 @@ func (exporterMonitorController exporterMonitorController) SendReport(ctx *gin.C
 			tenantId,
 			r.NoticeGroups,
 			r.ReportFormat,
+		)
+	})
+}
+
+// TriggerInspection 手动触发巡检
+// POST /api/w8t/exporter/monitor/inspect
+// 请求体: { "datasourceId": "xxx" } (可选,为空则巡检所有数据源)
+func (exporterMonitorController exporterMonitorController) TriggerInspection(ctx *gin.Context) {
+	r := new(types.RequestExporterMonitorInspect)
+	BindJson(ctx, r)
+
+	Service(ctx, func() (interface{}, interface{}) {
+		tenantId := ctx.GetString("TenantID")
+		if tenantId == "" {
+			tenantId = "default"
+		}
+		return nil, services.ExporterMonitorService.TriggerManualInspection(
+			tenantId,
+			r.DatasourceId,
 		)
 	})
 }
