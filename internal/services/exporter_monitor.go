@@ -18,6 +18,7 @@ type InterExporterMonitorService interface {
 	// 巡检相关
 	InspectAll() error
 	InspectDatasource(datasourceId string) error
+	TriggerManualInspection(tenantId, datasourceId string) error // 手动触发巡检
 
 	// 查询相关
 	GetRealtimeStatus(tenantId, datasourceId, status, job, keyword string) (interface{}, error)
@@ -56,6 +57,24 @@ func (s *exporterMonitorService) InspectAll() error {
 func (s *exporterMonitorService) InspectDatasource(datasourceId string) error {
 	inspector := exporter.NewInspector(s.ctx)
 	return inspector.InspectDatasource(datasourceId)
+}
+
+// TriggerManualInspection 手动触发巡检
+// 支持全量巡检或指定数据源巡检
+// - datasourceId 为空时: 巡检当前租户配置的所有数据源
+// - datasourceId 非空时: 只巡检指定的数据源
+func (s *exporterMonitorService) TriggerManualInspection(tenantId, datasourceId string) error {
+	inspector := exporter.NewInspector(s.ctx)
+
+	// 如果指定了数据源ID,只巡检该数据源
+	if datasourceId != "" {
+		logc.Infof(s.ctx.Ctx, "手动触发巡检: tenantId=%s, datasourceId=%s", tenantId, datasourceId)
+		return inspector.InspectDatasource(datasourceId)
+	}
+
+	// 否则巡检所有已启用的数据源 (强制执行,忽略时间检查)
+	logc.Infof(s.ctx.Ctx, "手动触发全量巡检: tenantId=%s", tenantId)
+	return inspector.InspectAll(true)
 }
 
 // GetRealtimeStatus 获取实时 Exporter 状态 (从数据库读取最新巡检结果)
