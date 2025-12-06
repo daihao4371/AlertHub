@@ -140,11 +140,77 @@ helm install watchalert . -n monitoring \
 
 ## 🎉 项目预览
 
+### 登录与概览
+<table>
+  <tr>
+    <td align="center" width="50%"><img src="assets/登录页面.png" alt="登录页面" width="100%"/><br/><b>登录页面</b></td>
+    <td align="center" width="50%"><img src="assets/概览.png" alt="系统概览" width="100%"/><br/><b>系统概览</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/概览1.png" alt="概览仪表盘" width="100%"/><br/><b>概览仪表盘</b></td>
+    <td align="center"><img src="assets/仪表盘.png" alt="数据仪表盘" width="100%"/><br/><b>数据仪表盘</b></td>
+  </tr>
+</table>
 
-| ![Login](assets/login.png) | ![Home](assets/home.png)            |
-|:--------------------------:|------------------------------|
-|    ![rules](assets/rules.png)     | ![img.png](assets/faultcenter.png)  |
-|   ![notice](assets/notice.png)    | ![duty](assets/duty.png)            |
-|  ![probing](assets/probing.png)   | ![datasource](assets/datasource.png) |
-|     ![user](assets/user.png)      | ![log](assets/log.png)              |
+### 告警规则管理
+<table>
+  <tr>
+    <td align="center"><img src="assets/告警规则管理.png" alt="告警规则管理"/><br/><b>告警规则管理</b></td>
+    <td align="center"><img src="assets/编辑告警规则.png" alt="编辑告警规则"/><br/><b>编辑告警规则</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/编辑告警规则的数据预览.png" alt="数据预览"/><br/><b>数据预览</b></td>
+    <td align="center"><img src="assets/规则模板.png" alt="规则模板"/><br/><b>规则模板</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/告警订阅.png" alt="告警订阅"/><br/><b>告警订阅</b></td>
+    <td align="center"><img src="assets/故障中心.png" alt="故障中心"/><br/><b>故障中心</b></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="assets/故障详情.png" alt="故障详情" width="50%"/><br/><b>故障详情</b></td>
+  </tr>
+</table>
+
+### 通知管理
+<table>
+  <tr>
+    <td align="center"><img src="assets/通知对象.png" alt="通知对象"/><br/><b>通知对象</b></td>
+    <td align="center"><img src="assets/通知模板.png" alt="通知模板"/><br/><b>通知模板</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/通知记录.png" alt="通知记录"/><br/><b>通知记录</b></td>
+    <td align="center"><img src="assets/值班中心.png" alt="值班中心"/><br/><b>值班中心</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/钉钉消息通知.png" alt="钉钉消息通知"/><br/><b>钉钉消息通知</b></td>
+    <td align="center"><img src="assets/飞书通知.png" alt="飞书通知"/><br/><b>飞书通知</b></td>
+  </tr>
+</table>
+
+### 拨测与巡检
+<table>
+  <tr>
+    <td align="center"><img src="assets/拨测任务.png" alt="拨测任务"/><br/><b>拨测任务</b></td>
+    <td align="center"><img src="assets/及时拨测.png" alt="及时拨测"/><br/><b>及时拨测</b></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="assets/Exporter巡检.png" alt="Exporter巡检" width="50%"/><br/><b>Exporter 巡检</b></td>
+  </tr>
+</table>
+
+### 系统管理
+<table>
+  <tr>
+    <td align="center"><img src="assets/数据源.png" alt="数据源管理"/><br/><b>数据源管理</b></td>
+    <td align="center"><img src="assets/用户管理.png" alt="用户管理"/><br/><b>用户管理</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/角色管理.png" alt="角色管理"/><br/><b>角色管理</b></td>
+    <td align="center"><img src="assets/租户管理.png" alt="租户管理"/><br/><b>租户管理</b></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="assets/系统设置.png" alt="系统设置"/><br/><b>系统设置</b></td>
+    <td align="center"><img src="assets/审计日志.png" alt="审计日志"/><br/><b>审计日志</b></td>
+  </tr>
+</table>
 
