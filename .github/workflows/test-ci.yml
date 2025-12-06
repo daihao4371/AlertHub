@@ -48,9 +48,22 @@ jobs:
       - name: Set env variables
         id: set_env
         run: |
-          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
-          echo "ACR_REGISTRY=${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}" >> $GITHUB_ENV
-          echo "ACR_NAMESPACE=${{ secrets.ALIYUN_ACR_NAMESPACE || 'watchalert' }}" >> $GITHUB_ENV
+          BRANCH_NAME=${GITHUB_REF#refs/heads/}
+          ACR_REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
+          ACR_NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
+          HAS_CREDS="${{ steps.check_acr.outputs.has_creds }}"
+          
+          echo "BRANCH_NAME=${BRANCH_NAME}" >> $GITHUB_ENV
+          echo "ACR_REGISTRY=${ACR_REGISTRY}" >> $GITHUB_ENV
+          echo "ACR_NAMESPACE=${ACR_NAMESPACE}" >> $GITHUB_ENV
+          
+          # 根据是否有凭证设置镜像标签
+          if [ "${HAS_CREDS}" == "true" ]; then
+            echo "IMAGE_TAG=${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:${BRANCH_NAME}" >> $GITHUB_ENV
+          else
+            # 如果没有凭证，使用本地标签，避免推送到未认证的注册表
+            echo "IMAGE_TAG=watchalert:${BRANCH_NAME}" >> $GITHUB_ENV
+          fi
 
       - name: Build and push
         uses: docker/build-push-action@v6.15.0
@@ -58,8 +71,11 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
+          # 只有在有凭证时才推送，否则只构建
           push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
+          # 明确设置输出类型，避免缓存问题
+          outputs: type=image
           build-args: |
-            VERSION=${{ env.DATE }}
+            VERSION=${{ env.BRANCH_NAME }}
           tags: |
-            ${{ env.ACR_REGISTRY }}/${{ env.ACR_NAMESPACE }}/watchalert:${{ env.BRANCH_NAME }}
+            ${{ env.IMAGE_TAG }}
