@@ -20,3 +20,8 @@ type RequestExporterMonitorSendReport struct {
 	NoticeGroups []string `json:"noticeGroups" binding:"required"` // 通知组 UUID 列表
 	ReportFormat string   `json:"reportFormat"`                    // simple/detailed
 }
+
+// RequestExporterMonitorInspect 请求手动触发巡检
+type RequestExporterMonitorInspect struct {
+	DatasourceId string `json:"datasourceId"` // 可选,为空则巡检所有数据源
+}

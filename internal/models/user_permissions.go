@@ -411,5 +411,25 @@ func PermissionsInfo() map[string]UserPermissions {
 			Key: "更新Exporter自动刷新状态",
 			API: "/api/w8t/exporter/monitor/autoRefresh",
 		},
+		"exporterMonitorInspect": {
+			Key: "手动触发Exporter巡检",
+			API: "/api/w8t/exporter/monitor/inspect",
+		},
+		"prometheusGetMetrics": {
+			Key: "获取Prometheus指标名称",
+			API: "/api/w8t/prometheus/metrics",
+		},
+		"prometheusGetLabels": {
+			Key: "获取Prometheus标签名称",
+			API: "/api/w8t/prometheus/labels",
+		},
+		"prometheusGetLabelValues": {
+			Key: "获取Prometheus标签值",
+			API: "/api/w8t/prometheus/label_values",
+		},
+		"prometheusGetSeries": {
+			Key: "获取Prometheus时间序列",
+			API: "/api/w8t/prometheus/series",
+		},
 	}
 }
