@@ -16,17 +16,11 @@ jobs:
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      - name: Inject slug/short variables
-        uses: rlespinasse/github-slug-action@v4
-
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
         with:
           driver: docker-container
-
-      - name: Available platforms
-        run: echo ${{ steps.buildx.outputs.platforms }}
 
       - name: Check ACR credentials
         id: check_acr
@@ -57,26 +51,28 @@ jobs:
           echo "ACR_REGISTRY=${ACR_REGISTRY}" >> $GITHUB_ENV
           echo "ACR_NAMESPACE=${ACR_NAMESPACE}" >> $GITHUB_ENV
           
-          # 根据是否有凭证设置镜像标签
           if [ "${HAS_CREDS}" == "true" ]; then
-            echo "IMAGE_TAG_LATEST=${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:latest" >> $GITHUB_ENV
-            echo "IMAGE_TAG_VERSION=${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:${TAG_NAME}" >> $GITHUB_ENV
+            IMAGE_LATEST="${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:latest"
+            IMAGE_VERSION="${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:${TAG_NAME}"
+            echo "IMAGE_TAG_LATEST=${IMAGE_LATEST}" >> $GITHUB_ENV
+            echo "IMAGE_TAG_VERSION=${IMAGE_VERSION}" >> $GITHUB_ENV
           else
-            # 如果没有凭证，使用本地标签，避免推送到未认证的注册表
             echo "IMAGE_TAG_LATEST=watchalert:latest" >> $GITHUB_ENV
             echo "IMAGE_TAG_VERSION=watchalert:${TAG_NAME}" >> $GITHUB_ENV
           fi
 
       - name: Build and push
-        uses: docker/build-push-action@v6.15.0
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
-          # 只有在有凭证时才推送，否则只构建
           push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
-          # 设置provenance为false，避免推送attestation导致的权限问题
+          # 禁用所有元数据以避免权限问题
           provenance: false
+          sbom: false
+          # 尝试增加超时时间
+          outputs: type=image,push=${{ steps.check_acr.outputs.has_creds == 'true' }}
           build-args: |
             VERSION=${{ env.TAG_NAME }}
           tags: |
