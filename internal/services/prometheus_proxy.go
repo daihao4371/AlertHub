@@ -88,13 +88,11 @@ func (s *prometheusProxyService) GetLabelValues(req *types.PrometheusProxyLabelV
 	// 调用底层 Provider 方法
 	values, err := client.GetLabelValues(req.LabelName, req.MetricName, startTime, endTime)
 	if err != nil {
-		logc.Errorf(s.ctx.Ctx, "获取标签值失败: datasourceId=%s, labelName=%s, err=%v",
-			req.DatasourceID, req.LabelName, err)
+		logc.Errorf(s.ctx.Ctx, "[PromQL 补全] 获取标签值失败: datasourceId=%s, labelName=%s, metricName=%s, err=%v",
+			req.DatasourceID, req.LabelName, req.MetricName, err)
 		return nil, fmt.Errorf("获取标签值失败: %w", err)
 	}
 
-	logc.Infof(s.ctx.Ctx, "获取标签值成功: datasourceId=%s, labelName=%s, count=%d",
-		req.DatasourceID, req.LabelName, len(values))
 	return values, nil
 }
 
@@ -177,6 +175,7 @@ func (s *prometheusProxyService) getPrometheusClient(datasourceID string) (provi
 // 参数:
 //   - start: Unix 时间戳(秒),0 表示不限制
 //   - end: Unix 时间戳(秒),0 表示不限制
+//
 // 返回:
 //   - startTime: 起始时间,零值表示不限制
 //   - endTime: 结束时间,零值表示不限制

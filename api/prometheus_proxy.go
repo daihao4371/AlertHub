@@ -7,6 +7,7 @@ import (
 	"watchAlert/pkg/response"
 
 	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/logc"
 )
 
 type prometheusProxyController struct{}
@@ -90,6 +91,8 @@ func (c *prometheusProxyController) GetLabelValues(ctx *gin.Context) {
 	// 调用 Service 层
 	values, err := services.PrometheusProxyService.GetLabelValues(&req)
 	if err != nil {
+		logc.Errorf(ctx, "[PromQL 补全] 获取标签值失败: datasourceId=%s, labelName=%s, metricName=%s, err=%v",
+			req.DatasourceID, req.LabelName, req.MetricName, err)
 		response.Fail(ctx, err.Error(), "failed")
 		return
 	}
