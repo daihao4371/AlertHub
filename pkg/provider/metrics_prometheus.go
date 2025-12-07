@@ -251,3 +251,127 @@ func (p PrometheusProvider) GetTargets() ([]TargetHealth, error) {
 
 	return targets, nil
 }
+
+// ========== PromQL 编辑器支持方法 ==========
+
+// GetLabelNames 获取所有标签名称列表
+// 用于 PromQL 编辑器的标签名称自动补全
+// 参数:
+//   - metricName: 可选,指定指标名称时只返回该指标的标签
+//   - startTime: 可选,查询时间范围起点
+//   - endTime: 可选,查询时间范围终点
+func (p PrometheusProvider) GetLabelNames(metricName string, startTime, endTime time.Time) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 构建查询选择器
+	var matchers []string
+	if metricName != "" {
+		matchers = []string{fmt.Sprintf("{__name__=\"%s\"}", metricName)}
+	}
+
+	// 调用 Prometheus LabelNames API
+	var labels []string
+	var err error
+
+	// 如果指定了时间范围,调用带时间参数的 API
+	if !startTime.IsZero() && !endTime.IsZero() {
+		labels, _, err = p.apiV1.LabelNames(ctx, matchers, startTime, endTime)
+	} else {
+		labels, _, err = p.apiV1.LabelNames(ctx, matchers, time.Time{}, time.Time{})
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return labels, nil
+}
+
+// GetLabelValues 获取指定标签的所有值列表
+// 用于 PromQL 编辑器的标签值自动补全
+// 参数:
+//   - labelName: 标签名称 (如 "job", "instance", "env")
+//   - metricName: 可选,限定指标范围
+//   - startTime: 可选,查询时间范围起点
+//   - endTime: 可选,查询时间范围终点
+func (p PrometheusProvider) GetLabelValues(labelName, metricName string, startTime, endTime time.Time) ([]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 构建查询选择器
+	var matchers []string
+	if metricName != "" {
+		matchers = []string{fmt.Sprintf("{__name__=\"%s\"}", metricName)}
+	}
+
+	// 调用 Prometheus LabelValues API
+	var labelValues model.LabelValues
+	var err error
+
+	// 如果指定了时间范围,调用带时间参数的 API
+	if !startTime.IsZero() && !endTime.IsZero() {
+		labelValues, _, err = p.apiV1.LabelValues(ctx, labelName, matchers, startTime, endTime)
+	} else {
+		labelValues, _, err = p.apiV1.LabelValues(ctx, labelName, matchers, time.Time{}, time.Time{})
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 将 model.LabelValues 转换为 []string
+	values := make([]string, len(labelValues))
+	for i, lv := range labelValues {
+		values[i] = string(lv)
+	}
+
+	return values, nil
+}
+
+// GetMetricNames 获取所有指标名称列表
+// 用于 PromQL 编辑器的指标名称自动补全
+// 本质上是获取 __name__ 标签的所有值
+func (p PrometheusProvider) GetMetricNames() ([]string, error) {
+	return p.GetLabelValues("__name__", "", time.Time{}, time.Time{})
+}
+
+// GetSeries 获取时间序列元数据
+// 用于 PromQL 编辑器的序列信息查询
+// 参数:
+//   - matchers: 标签选择器数组 (如 []string{"up", "node_cpu_seconds_total{job=\"node\"}"})
+//   - startTime: 查询时间范围起点
+//   - endTime: 查询时间范围终点
+// 返回:
+//   - 匹配的时间序列标签组合列表
+func (p PrometheusProvider) GetSeries(matchers []string, startTime, endTime time.Time) ([]map[string]string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+	defer cancel()
+
+	// 调用 Prometheus Series API
+	var result []model.LabelSet
+	var err error
+
+	// 如果指定了时间范围,调用带时间参数的 API
+	if !startTime.IsZero() && !endTime.IsZero() {
+		result, _, err = p.apiV1.Series(ctx, matchers, startTime, endTime)
+	} else {
+		result, _, err = p.apiV1.Series(ctx, matchers, time.Time{}, time.Time{})
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	// 转换 model.LabelSet 为 map[string]string
+	series := make([]map[string]string, 0, len(result))
+	for _, labelSet := range result {
+		labels := make(map[string]string)
+		for k, v := range labelSet {
+			labels[string(k)] = string(v)
+		}
+		series = append(series, labels)
+	}
+
+	return series, nil
+}
