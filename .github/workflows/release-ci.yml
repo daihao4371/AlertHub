@@ -31,6 +31,18 @@ jobs:
             echo "has_creds=false" >> $GITHUB_OUTPUT
           fi
 
+      - name: Extract and validate tag
+        id: tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "✅ 提取的 tag: ${TAG_NAME}"
+          
+          if [[ ! "${TAG_NAME}" =~ ^v[0-9] ]]; then
+            echo "❌ 错误: tag 格式不对: ${TAG_NAME}"
+            exit 1
+          fi
+
       - name: Login to Aliyun Container Registry
         if: steps.check_acr.outputs.has_creds == 'true'
         uses: docker/login-action@v3
@@ -39,27 +51,23 @@ jobs:
           username: ${{ secrets.ALIYUN_ACR_USER }}
           password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
 
-      - name: Set env variables
-        id: set_env
+      - name: Prepare image tags
+        id: image_tags
         run: |
-          TAG_NAME=${GITHUB_REF#refs/tags/}
-          ACR_REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
-          ACR_NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
-          HAS_CREDS="${{ steps.check_acr.outputs.has_creds }}"
+          REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
+          NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
+          REPO="watchalert"
+          TAG_NAME="${{ steps.tag.outputs.tag_name }}"
           
-          echo "TAG_NAME=${TAG_NAME}" >> $GITHUB_ENV
-          echo "ACR_REGISTRY=${ACR_REGISTRY}" >> $GITHUB_ENV
-          echo "ACR_NAMESPACE=${ACR_NAMESPACE}" >> $GITHUB_ENV
+          IMAGE_LATEST="${REGISTRY}/${NAMESPACE}/${REPO}:latest"
+          IMAGE_VERSION="${REGISTRY}/${NAMESPACE}/${REPO}:${TAG_NAME}"
           
-          if [ "${HAS_CREDS}" == "true" ]; then
-            IMAGE_LATEST="${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:latest"
-            IMAGE_VERSION="${ACR_REGISTRY}/${ACR_NAMESPACE}/watchalert:${TAG_NAME}"
-            echo "IMAGE_TAG_LATEST=${IMAGE_LATEST}" >> $GITHUB_ENV
-            echo "IMAGE_TAG_VERSION=${IMAGE_VERSION}" >> $GITHUB_ENV
-          else
-            echo "IMAGE_TAG_LATEST=watchalert:latest" >> $GITHUB_ENV
-            echo "IMAGE_TAG_VERSION=watchalert:${TAG_NAME}" >> $GITHUB_ENV
-          fi
+          echo "latest=${IMAGE_LATEST}" >> $GITHUB_OUTPUT
+          echo "version=${IMAGE_VERSION}" >> $GITHUB_OUTPUT
+          
+          echo "📦 将推送以下镜像:"
+          echo "  - ${IMAGE_LATEST}"
+          echo "  - ${IMAGE_VERSION}"
 
       - name: Build and push
         uses: docker/build-push-action@v6
@@ -68,13 +76,10 @@ jobs:
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
-          # 禁用所有元数据以避免权限问题
           provenance: false
           sbom: false
-          # 尝试增加超时时间
-          outputs: type=image,push=${{ steps.check_acr.outputs.has_creds == 'true' }}
           build-args: |
-            VERSION=${{ env.TAG_NAME }}
+            VERSION=${{ steps.tag.outputs.tag_name }}
           tags: |
-            ${{ env.IMAGE_TAG_LATEST }}
-            ${{ env.IMAGE_TAG_VERSION }}
+            ${{ steps.image_tags.outputs.latest }}
+            ${{ steps.image_tags.outputs.version }}
