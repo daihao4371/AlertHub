@@ -302,7 +302,13 @@ func (p PrometheusProvider) GetLabelValues(labelName, metricName string, startTi
 	// 构建查询选择器
 	var matchers []string
 	if metricName != "" {
-		matchers = []string{fmt.Sprintf("{__name__=\"%s\"}", metricName)}
+		// 重要: 使用 __name__ 标签来限制指标范围
+		// 格式: {__name__="metricName"}
+		matcher := fmt.Sprintf("{__name__=\"%s\"}", metricName)
+		matchers = []string{matcher}
+		// 调试日志: 记录构建的查询选择器
+		// 注意: 在生产环境中应该使用日志级别控制
+		// logc.Infof(ctx, "[PromQL 补全] Provider 层构建查询选择器: labelName=%s, matcher=%s", labelName, matcher)
 	}
 
 	// 调用 Prometheus LabelValues API
@@ -313,11 +319,16 @@ func (p PrometheusProvider) GetLabelValues(labelName, metricName string, startTi
 	if !startTime.IsZero() && !endTime.IsZero() {
 		labelValues, _, err = p.apiV1.LabelValues(ctx, labelName, matchers, startTime, endTime)
 	} else {
+		// 如果没有指定时间范围,使用零值表示不限制时间范围
 		labelValues, _, err = p.apiV1.LabelValues(ctx, labelName, matchers, time.Time{}, time.Time{})
 	}
 
 	if err != nil {
-		return nil, err
+		// 记录错误详情,包括查询参数
+		// logc.Errorf(ctx, "[PromQL 补全] Prometheus API 调用失败: labelName=%s, metricName=%s, matchers=%v, err=%v",
+		// 	labelName, metricName, matchers, err)
+		return nil, fmt.Errorf("prometheus LabelValues API 调用失败: labelName=%s, metricName=%s, err=%w",
+			labelName, metricName, err)
 	}
 
 	// 将 model.LabelValues 转换为 []string
@@ -325,6 +336,10 @@ func (p PrometheusProvider) GetLabelValues(labelName, metricName string, startTi
 	for i, lv := range labelValues {
 		values[i] = string(lv)
 	}
+
+	// 调试日志: 记录返回结果
+	// logc.Infof(ctx, "[PromQL 补全] Provider 层返回结果: labelName=%s, metricName=%s, count=%d",
+	// 	labelName, metricName, len(values))
 
 	return values, nil
 }
@@ -342,6 +357,7 @@ func (p PrometheusProvider) GetMetricNames() ([]string, error) {
 //   - matchers: 标签选择器数组 (如 []string{"up", "node_cpu_seconds_total{job=\"node\"}"})
 //   - startTime: 查询时间范围起点
 //   - endTime: 查询时间范围终点
+//
 // 返回:
 //   - 匹配的时间序列标签组合列表
 func (p PrometheusProvider) GetSeries(matchers []string, startTime, endTime time.Time) ([]map[string]string, error) {
