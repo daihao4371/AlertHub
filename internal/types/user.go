@@ -10,6 +10,7 @@ type RequestUserLogin struct {
 type RequestUserCreate struct {
 	UserId     string   `json:"userid"`
 	UserName   string   `json:"username"`
+	RealName   string   `json:"realName" binding:"required"`
 	Email      string   `json:"email"`
 	Phone      string   `json:"phone"`
 	Password   string   `json:"password"`
@@ -24,6 +25,7 @@ type RequestUserCreate struct {
 type RequestUserUpdate struct {
 	UserId     string   `json:"userid"`
 	UserName   string   `json:"username"`
+	RealName   string   `json:"realName"`
 	Email      string   `json:"email"`
 	Phone      string   `json:"phone"`
 	Password   string   `json:"password"`

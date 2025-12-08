@@ -125,6 +125,7 @@ func (us userService) Register(req interface{}) (interface{}, interface{}) {
 	err := us.ctx.DB.User().Create(models.Member{
 		UserId:     r.UserId,
 		UserName:   r.UserName,
+		RealName:   r.RealName,
 		Email:      r.Email,
 		Phone:      r.Phone,
 		Password:   tools.GenerateHashPassword(r.Password),
@@ -157,6 +158,7 @@ func (us userService) Update(req interface{}) (interface{}, interface{}) {
 	err := us.ctx.DB.User().Update(models.Member{
 		UserId:     r.UserId,
 		UserName:   r.UserName,
+		RealName:   r.RealName,
 		Email:      r.Email,
 		Phone:      r.Phone,
 		Password:   r.Password,
