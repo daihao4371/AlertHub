@@ -14,6 +14,7 @@ type AlertDataSource struct {
 	Description      string                 `json:"description"`
 	KubeConfig       string                 `json:"kubeConfig"`
 	UpdateBy         string                 `json:"updateBy"`
+	UpdateByRealName string                 `json:"updateByRealName" gorm:"-"`
 	UpdateAt         int64                  `json:"updateAt"`
 	Enabled          *bool                  `json:"enabled" `
 }
