@@ -53,42 +53,8 @@ func (ds DatasourceRepo) List(tenantId, datasourceId, datasourceType, query stri
 		return nil, err
 	}
 
-	// Early return if no data
-	if len(data) == 0 {
-		return data, nil
-	}
-
-	// Collect unique usernames that need realName enrichment
-	usernamesMap := make(map[string]bool)
-	for _, item := range data {
-		if item.UpdateBy != "" {
-			usernamesMap[item.UpdateBy] = true
-		}
-	}
-
-	// Batch query users by usernames
-	usernameToRealNameMap := make(map[string]string)
-	if len(usernamesMap) > 0 {
-		usernames := make([]string, 0, len(usernamesMap))
-		for username := range usernamesMap {
-			usernames = append(usernames, username)
-		}
-
-		var users []models.Member
-		ds.DB().Model(&models.Member{}).Where("user_name IN ?", usernames).Find(&users)
-		for _, user := range users {
-			usernameToRealNameMap[user.UserName] = user.RealName
-		}
-	}
-
-	// Enrich updateBy realName
-	for i := range data {
-		if data[i].UpdateBy != "" {
-			if realName, exists := usernameToRealNameMap[data[i].UpdateBy]; exists {
-				data[i].UpdateByRealName = realName
-			}
-		}
-	}
+	// Enrich UpdateByRealName using common function
+	EnrichUpdateByRealName(ds.DB(), &data)
 
 	return data, nil
 }
