@@ -2,10 +2,11 @@ package repo
 
 import (
 	"context"
-	"github.com/zeromicro/go-zero/core/logc"
-	"gorm.io/gorm"
 	"time"
 	"watchAlert/internal/models"
+
+	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 )
 
 type (
@@ -99,6 +100,44 @@ func (p ProbingRepo) List(tenantId, ruleType, query string) ([]models.ProbingRul
 		}
 		return data, err
 	}
+
+	// Early return if no data
+	if len(data) == 0 {
+		return data, nil
+	}
+
+	// Collect unique usernames that need realName enrichment
+	usernamesMap := make(map[string]bool)
+	for _, item := range data {
+		if item.UpdateBy != "" {
+			usernamesMap[item.UpdateBy] = true
+		}
+	}
+
+	// Batch query users by usernames
+	usernameToRealNameMap := make(map[string]string)
+	if len(usernamesMap) > 0 {
+		usernames := make([]string, 0, len(usernamesMap))
+		for username := range usernamesMap {
+			usernames = append(usernames, username)
+		}
+
+		var users []models.Member
+		p.DB().Model(&models.Member{}).Where("user_name IN ?", usernames).Find(&users)
+		for _, user := range users {
+			usernameToRealNameMap[user.UserName] = user.RealName
+		}
+	}
+
+	// Enrich updateBy realName
+	for i := range data {
+		if data[i].UpdateBy != "" {
+			if realName, exists := usernameToRealNameMap[data[i].UpdateBy]; exists {
+				data[i].UpdateByRealName = realName
+			}
+		}
+	}
+
 	return data, nil
 }
 

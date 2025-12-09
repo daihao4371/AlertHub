@@ -3,6 +3,7 @@ package probing
 import (
 	"context"
 	"fmt"
+	"strconv"
 	"time"
 	"watchAlert/alert/process"
 	"watchAlert/internal/ctx"
@@ -14,6 +15,36 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"golang.org/x/sync/errgroup"
 )
+
+// safeConvertToFloat64 安全地将 interface{} 转换为 float64
+// 如果转换失败，返回 0 和错误信息
+func safeConvertToFloat64(value interface{}, fieldName string) (float64, error) {
+	if value == nil {
+		return 0, fmt.Errorf("field %s is nil", fieldName)
+	}
+
+	switch v := value.(type) {
+	case float64:
+		return v, nil
+	case float32:
+		return float64(v), nil
+	case int:
+		return float64(v), nil
+	case int64:
+		return float64(v), nil
+	case int32:
+		return float64(v), nil
+	case string:
+		// 尝试解析字符串为 float64
+		result, err := strconv.ParseFloat(v, 64)
+		if err != nil {
+			return 0, fmt.Errorf("field %s cannot be converted to float64: %v", fieldName, err)
+		}
+		return result, nil
+	default:
+		return 0, fmt.Errorf("field %s has unsupported type: %T", fieldName, value)
+	}
+}
 
 type ProductProbing struct {
 	ctx           *ctx.Context
@@ -94,8 +125,23 @@ func (t *ProductProbing) worker(rule models.ProbingRule) {
 	event.Fingerprint = tools.Md5Hash([]byte(event.RuleId))
 	event.Labels = eValue.GetLabels()
 	var isValue float64
+	var queryValue float64
+
 	if rule.RuleType != provider.TCPEndpointProvider {
-		event.Labels["value"] = eValue[ruleConfig.Strategy.Field].(float64)
+		// 安全地获取字段值并转换为 float64
+		fieldValue, exists := eValue[ruleConfig.Strategy.Field]
+		if !exists {
+			logc.Errorf(t.ctx.Ctx, "field %s not found in endpoint value for rule %s", ruleConfig.Strategy.Field, rule.RuleId)
+			return
+		}
+
+		var convertErr error
+		queryValue, convertErr = safeConvertToFloat64(fieldValue, ruleConfig.Strategy.Field)
+		if convertErr != nil {
+			logc.Errorf(t.ctx.Ctx, "failed to convert field %s to float64 for rule %s: %v", ruleConfig.Strategy.Field, rule.RuleId, convertErr)
+			return
+		}
+		event.Labels["value"] = queryValue
 	} else {
 		if eValue["IsSuccessful"] == true {
 			isValue = 1
@@ -116,7 +162,7 @@ func (t *ProductProbing) worker(rule models.ProbingRule) {
 	default:
 		option = models.EvalCondition{
 			Operator:      ruleConfig.Strategy.Operator,
-			QueryValue:    eValue[ruleConfig.Strategy.Field].(float64),
+			QueryValue:    queryValue,
 			ExpectedValue: ruleConfig.Strategy.ExpectedValue,
 		}
 	}
