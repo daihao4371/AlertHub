@@ -8,7 +8,7 @@ import (
 
 // EnrichUpdateByRealName enriches UpdateByRealName field for a slice of items
 // This function performs batch query to avoid N+1 query problem
-// Supported types: *[]models.AlertNotice, *[]models.NoticeTemplateExample, *[]models.AlertDataSource, *[]models.ProbingRule
+// Supported types: *[]models.AlertNotice, *[]models.NoticeTemplateExample, *[]models.AlertDataSource, *[]models.ProbingRule, *[]models.AlertSilences, *[]models.AlertRule
 func EnrichUpdateByRealName(db *gorm.DB, items interface{}) {
 	if items == nil {
 		return
@@ -72,6 +72,40 @@ func EnrichUpdateByRealName(db *gorm.DB, items interface{}) {
 			}
 		}
 	case *[]models.ProbingRule:
+		if v == nil || len(*v) == 0 {
+			return
+		}
+		for _, item := range *v {
+			if item.UpdateBy != "" {
+				usernamesMap[item.UpdateBy] = true
+			}
+		}
+		usernameToRealNameMap := batchQueryRealNames(db, usernamesMap)
+		for i := range *v {
+			if (*v)[i].UpdateBy != "" {
+				if realName, exists := usernameToRealNameMap[(*v)[i].UpdateBy]; exists {
+					(*v)[i].UpdateByRealName = realName
+				}
+			}
+		}
+	case *[]models.AlertSilences:
+		if v == nil || len(*v) == 0 {
+			return
+		}
+		for _, item := range *v {
+			if item.UpdateBy != "" {
+				usernamesMap[item.UpdateBy] = true
+			}
+		}
+		usernameToRealNameMap := batchQueryRealNames(db, usernamesMap)
+		for i := range *v {
+			if (*v)[i].UpdateBy != "" {
+				if realName, exists := usernameToRealNameMap[(*v)[i].UpdateBy]; exists {
+					(*v)[i].UpdateByRealName = realName
+				}
+			}
+		}
+	case *[]models.AlertRule:
 		if v == nil || len(*v) == 0 {
 			return
 		}

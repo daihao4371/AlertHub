@@ -104,6 +104,11 @@ func (rr RuleRepo) List(tenantId, ruleGroupId, datasourceType, query, status str
 		return nil, 0, err
 	}
 
+	// Enrich UpdateByRealName using common function
+	if len(data) > 0 {
+		EnrichUpdateByRealName(rr.DB(), &data)
+	}
+
 	return data, count, nil
 }
 
