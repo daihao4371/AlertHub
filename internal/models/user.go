@@ -3,6 +3,7 @@ package models
 type Member struct {
 	UserId     string   `json:"userid"`
 	UserName   string   `json:"username"`
+	RealName   string   `json:"realName" binding:"required"`
 	Email      string   `json:"email"`
 	Phone      string   `json:"phone"`
 	Password   string   `json:"password"`

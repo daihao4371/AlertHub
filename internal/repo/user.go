@@ -43,7 +43,7 @@ func (ur UserRepo) List(query, joinDuty string) ([]models.Member, error) {
 	)
 
 	if query != "" {
-		db.Where("user_name LIKE ? OR email Like ? OR phone LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+		db.Where("user_name LIKE ? OR real_name LIKE ? OR email Like ? OR phone LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 	}
 	if joinDuty == "true" {
 		db.Where("join_duty = ?", "true")
@@ -69,7 +69,7 @@ func (ur UserRepo) Get(userId, username, query string) (models.Member, bool, err
 		db.Where("user_name = ?", username)
 	}
 	if query != "" {
-		db.Where("user_id LIKE ? or user_name LIKE ? or email LIKE ? or phone LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
+		db.Where("user_id LIKE ? or user_name LIKE ? or real_name LIKE ? or email LIKE ? or phone LIKE ?", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%", "%"+query+"%")
 	}
 
 	err := db.First(&data).Error

@@ -2,6 +2,8 @@ package repo
 
 import (
 	"fmt"
+	"reflect"
+
 	"gorm.io/gorm"
 )
 
@@ -54,11 +56,36 @@ func (g GormDBCli) Updates(value Updates) error {
 // Delete 删除数据
 func (g GormDBCli) Delete(value Delete) error {
 	return g.executeTransaction(func(tx *gorm.DB) error {
+		// 构建查询条件
 		tx = tx.Model(value.Table)
 		for column, val := range value.Where {
 			tx = tx.Where(column, val)
 		}
-		return tx.Delete(value.Table).Error
+
+		// GORM Delete 方法需要传入模型实例（指针类型）
+		// 如果 value.Table 是值类型，需要转换为指针类型
+		var deleteTarget interface{}
+		tableType := reflect.TypeOf(value.Table)
+		if tableType == nil {
+			return fmt.Errorf("删除目标表类型为空")
+		}
+
+		// 如果已经是指针类型，直接使用
+		if tableType.Kind() == reflect.Ptr {
+			deleteTarget = value.Table
+		} else {
+			// 如果是值类型，创建指针
+			tableValue := reflect.New(tableType)
+			deleteTarget = tableValue.Interface()
+		}
+
+		// 执行删除操作
+		result := tx.Delete(deleteTarget)
+		if result.Error != nil {
+			return result.Error
+		}
+
+		return nil
 	}, "数据删除失败")
 }
 
