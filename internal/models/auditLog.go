@@ -6,16 +6,17 @@ import (
 )
 
 type AuditLog struct {
-	TenantId   string `json:"tenantId" form:"tenantId"`
-	ID         string `json:"id" form:"id"`
-	Username   string `json:"username" form:"username"`
-	IPAddress  string `json:"ipAddress" form:"ipAddress"`
-	Method     string `json:"method"`
-	Path       string `json:"path" form:"path"`
-	CreatedAt  int64  `json:"createdAt" form:"createdAt"`
-	StatusCode int    `json:"statusCode"`
-	Body       string `json:"body"`
-	AuditType  string `json:"auditType"`
+	TenantId         string `json:"tenantId" form:"tenantId"`
+	ID               string `json:"id" form:"id"`
+	Username         string `json:"username" form:"username"`
+	UsernameRealName string `json:"usernameRealName" gorm:"-"` // Not persisted, for display only
+	IPAddress        string `json:"ipAddress" form:"ipAddress"`
+	Method           string `json:"method"`
+	Path             string `json:"path" form:"path"`
+	CreatedAt        int64  `json:"createdAt" form:"createdAt"`
+	StatusCode       int    `json:"statusCode"`
+	Body             string `json:"body"`
+	AuditType        string `json:"auditType"`
 }
 
 func (a AuditLog) String() string {

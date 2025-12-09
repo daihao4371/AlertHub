@@ -4,6 +4,7 @@ type Tenant struct {
 	ID               string `json:"id"`
 	Name             string `json:"name"`
 	Manager          string `json:"manager"`
+	ManagerRealName  string `json:"managerRealName" gorm:"-"` // Not persisted, for display only
 	Description      string `json:"description"`
 	UserNumber       int64  `json:"userNumber"`
 	RuleNumber       int64  `json:"ruleNumber"`
@@ -31,4 +32,5 @@ type TenantUser struct {
 	UserID   string `json:"userId"`
 	UserName string `json:"userName"`
 	UserRole string `json:"userRole"`
+	RealName string `json:"realName" gorm:"-"` // Not persisted, for display only
 }

@@ -114,3 +114,55 @@ func batchQueryRealNames(db *gorm.DB, usernamesMap map[string]bool) map[string]s
 
 	return usernameToRealNameMap
 }
+
+// EnrichUsernameRealName enriches UsernameRealName field for a slice of AuditLog items
+// This function performs batch query to avoid N+1 query problem
+func EnrichUsernameRealName(db *gorm.DB, items *[]models.AuditLog) {
+	if items == nil || len(*items) == 0 {
+		return
+	}
+
+	// Collect unique usernames that need realName enrichment
+	usernamesMap := make(map[string]bool)
+	for _, item := range *items {
+		if item.Username != "" {
+			usernamesMap[item.Username] = true
+		}
+	}
+
+	// Batch query and enrich
+	usernameToRealNameMap := batchQueryRealNames(db, usernamesMap)
+	for i := range *items {
+		if (*items)[i].Username != "" {
+			if realName, exists := usernameToRealNameMap[(*items)[i].Username]; exists {
+				(*items)[i].UsernameRealName = realName
+			}
+		}
+	}
+}
+
+// EnrichManagerRealName enriches ManagerRealName field for a slice of Tenant items
+// This function performs batch query to avoid N+1 query problem
+func EnrichManagerRealName(db *gorm.DB, items *[]models.Tenant) {
+	if items == nil || len(*items) == 0 {
+		return
+	}
+
+	// Collect unique usernames that need realName enrichment
+	usernamesMap := make(map[string]bool)
+	for _, item := range *items {
+		if item.Manager != "" {
+			usernamesMap[item.Manager] = true
+		}
+	}
+
+	// Batch query and enrich
+	usernameToRealNameMap := batchQueryRealNames(db, usernamesMap)
+	for i := range *items {
+		if (*items)[i].Manager != "" {
+			if realName, exists := usernameToRealNameMap[(*items)[i].Manager]; exists {
+				(*items)[i].ManagerRealName = realName
+			}
+		}
+	}
+}
