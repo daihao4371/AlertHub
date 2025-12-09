@@ -1,11 +1,12 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"strconv"
 	"time"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -63,6 +64,9 @@ func (a AuditLogRepo) List(r types.RequestAuditLogQuery) (types.ResponseAuditLog
 		return types.ResponseAuditLog{}, err
 	}
 
+	// Enrich UsernameRealName using common function
+	EnrichUsernameRealName(a.db, &data)
+
 	d := types.ResponseAuditLog{
 		List: data,
 		Page: models.Page{
@@ -104,6 +108,10 @@ func (a AuditLogRepo) Search(r types.RequestAuditLogQuery) (types.ResponseAuditL
 	if err != nil {
 		return types.ResponseAuditLog{}, err
 	}
+
+	// Enrich UsernameRealName using common function
+	EnrichUsernameRealName(a.db, &data)
+
 	d := types.ResponseAuditLog{
 		List: data,
 		Page: models.Page{

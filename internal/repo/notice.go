@@ -50,11 +50,7 @@ func (nr NoticeRepo) GetQuota(id string) bool {
 
 	nr.db.Model(&models.AlertNotice{}).Where("tenant_id = ?", id).Count(&Number)
 
-	if Number < data.NoticeNumber {
-		return true
-	}
-
-	return false
+	return Number < data.NoticeNumber
 }
 
 func (nr NoticeRepo) Get(tenantId, id string) (models.AlertNotice, error) {
@@ -86,6 +82,9 @@ func (nr NoticeRepo) List(tenantId, noticeTmplId, query string) ([]models.AlertN
 	if err != nil {
 		return nil, err
 	}
+
+	// Enrich UpdateByRealName using common function
+	EnrichUpdateByRealName(nr.db, &alertNoticeObject)
 
 	return alertNoticeObject, nil
 }

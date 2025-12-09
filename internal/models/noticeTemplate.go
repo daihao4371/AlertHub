@@ -11,4 +11,5 @@ type NoticeTemplateExample struct {
 	EnableFeiShuJsonCard *bool  `json:"enableFeiShuJsonCard"`
 	UpdateAt             int64  `json:"updateAt"`
 	UpdateBy             string `json:"updateBy"`
+	UpdateByRealName     string `json:"updateByRealName" gorm:"-"` // Not persisted, for display only
 }

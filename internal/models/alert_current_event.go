@@ -61,10 +61,11 @@ type SilenceInfo struct {
 }
 
 type ConfirmState struct {
-	IsOk                   bool   `json:"isOk"`                   // 是否已认领
-	ConfirmActionTime      int64  `json:"confirmActionTime"`      // 点击认领时间
-	ConfirmTimeoutSendTime int64  `json:"confirmTimeoutSendTime"` // 认领超时通知时间
-	ConfirmUsername        string `json:"confirmUsername"`
+	IsOk                    bool   `json:"isOk"`                   // 是否已认领
+	ConfirmActionTime       int64  `json:"confirmActionTime"`      // 点击认领时间
+	ConfirmTimeoutSendTime  int64  `json:"confirmTimeoutSendTime"` // 认领超时通知时间
+	ConfirmUsername         string `json:"confirmUsername"`
+	ConfirmUsernameRealName string `json:"confirmUsernameRealName" gorm:"-"` // Not persisted, for display only
 }
 
 const (

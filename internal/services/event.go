@@ -157,6 +157,44 @@ func (e eventService) ListCurrentEvent(req interface{}) (interface{}, interface{
 	})
 
 	paginatedList := pageSlice(filteredEvents, int(r.Page.Index), int(r.Page.Size))
+
+	// 批量查询并填充认领人真实姓名
+	if len(paginatedList) > 0 {
+		// 收集所有需要查询的用户名
+		usernamesMap := make(map[string]bool)
+		for _, event := range paginatedList {
+			if event.ConfirmState.ConfirmUsername != "" {
+				usernamesMap[event.ConfirmState.ConfirmUsername] = true
+			}
+		}
+
+		// 批量查询真实姓名
+		if len(usernamesMap) > 0 {
+			usernames := make([]string, 0, len(usernamesMap))
+			for username := range usernamesMap {
+				usernames = append(usernames, username)
+			}
+
+			var members []models.Member
+			e.ctx.DB.DB().Model(&models.Member{}).Where("user_name IN ?", usernames).Find(&members)
+
+			// 创建用户名到真实姓名的映射
+			usernameToRealNameMap := make(map[string]string)
+			for _, member := range members {
+				usernameToRealNameMap[member.UserName] = member.RealName
+			}
+
+			// 填充真实姓名
+			for i := range paginatedList {
+				if paginatedList[i].ConfirmState.ConfirmUsername != "" {
+					if realName, exists := usernameToRealNameMap[paginatedList[i].ConfirmState.ConfirmUsername]; exists {
+						paginatedList[i].ConfirmState.ConfirmUsernameRealName = realName
+					}
+				}
+			}
+		}
+	}
+
 	return types.ResponseAlertCurEventList{
 		List: paginatedList,
 		Page: models.Page{

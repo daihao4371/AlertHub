@@ -150,6 +150,9 @@ func (tr TenantRepo) List(userId string) (data []models.Tenant, err error) {
 		*ts = append(*ts, getT)
 	}
 
+	// Enrich ManagerRealName using common function
+	EnrichManagerRealName(tr.db, ts)
+
 	return *ts, nil
 }
 
@@ -158,6 +161,15 @@ func (tr TenantRepo) Get(tenantId string) (data models.Tenant, err error) {
 	err = tr.db.Model(&models.Tenant{}).Where("id = ?", tenantId).First(&d).Error
 	if err != nil {
 		return d, err
+	}
+
+	// 查询并填充 ManagerRealName
+	if d.Manager != "" {
+		var member models.Member
+		err = tr.db.Model(&models.Member{}).Where("user_name = ?", d.Manager).First(&member).Error
+		if err == nil {
+			d.ManagerRealName = member.RealName
+		}
 	}
 
 	return d, nil
@@ -318,6 +330,41 @@ func (tr TenantRepo) GetTenantLinkedUsers(tenantId string) (models.TenantLinkedU
 	err := tr.db.Model(&models.TenantLinkedUsers{}).Where("id = ?", tenantId).First(&d).Error
 	if err != nil {
 		return d, err
+	}
+
+	// 批量查询用户真实姓名并填充
+	if len(d.Users) > 0 {
+		// 收集所有用户名
+		userNamesMap := make(map[string]bool)
+		for _, user := range d.Users {
+			if user.UserName != "" {
+				userNamesMap[user.UserName] = true
+			}
+		}
+
+		// 批量查询真实姓名
+		if len(userNamesMap) > 0 {
+			userNames := make([]string, 0, len(userNamesMap))
+			for userName := range userNamesMap {
+				userNames = append(userNames, userName)
+			}
+
+			var members []models.Member
+			tr.db.Model(&models.Member{}).Where("user_name IN ?", userNames).Find(&members)
+
+			// 创建用户名到真实姓名的映射
+			userNameToRealNameMap := make(map[string]string)
+			for _, member := range members {
+				userNameToRealNameMap[member.UserName] = member.RealName
+			}
+
+			// 填充真实姓名
+			for i := range d.Users {
+				if realName, exists := userNameToRealNameMap[d.Users[i].UserName]; exists {
+					d.Users[i].RealName = realName
+				}
+			}
+		}
 	}
 
 	return d, nil

@@ -2,10 +2,11 @@ package repo
 
 import (
 	"context"
-	"github.com/zeromicro/go-zero/core/logc"
-	"gorm.io/gorm"
 	"time"
 	"watchAlert/internal/models"
+
+	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 )
 
 type (
@@ -99,6 +100,10 @@ func (p ProbingRepo) List(tenantId, ruleType, query string) ([]models.ProbingRul
 		}
 		return data, err
 	}
+
+	// Enrich UpdateByRealName using common function
+	EnrichUpdateByRealName(p.DB(), &data)
+
 	return data, nil
 }
 

@@ -1,9 +1,10 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -65,6 +66,43 @@ func (e EventRepo) GetHistoryEvent(r types.RequestAlertHisEventQuery) (types.Res
 
 	if err := db.Limit(int(r.Page.Size)).Offset(int((r.Page.Index - 1) * r.Page.Size)).Find(&data).Error; err != nil {
 		return types.ResponseHistoryEventList{}, err
+	}
+
+	// 批量查询并填充认领人真实姓名
+	if len(data) > 0 {
+		// 收集所有需要查询的用户名
+		usernamesMap := make(map[string]bool)
+		for _, event := range data {
+			if event.ConfirmState.ConfirmUsername != "" {
+				usernamesMap[event.ConfirmState.ConfirmUsername] = true
+			}
+		}
+
+		// 批量查询真实姓名
+		if len(usernamesMap) > 0 {
+			usernames := make([]string, 0, len(usernamesMap))
+			for username := range usernamesMap {
+				usernames = append(usernames, username)
+			}
+
+			var members []models.Member
+			e.DB().Model(&models.Member{}).Where("user_name IN ?", usernames).Find(&members)
+
+			// 创建用户名到真实姓名的映射
+			usernameToRealNameMap := make(map[string]string)
+			for _, member := range members {
+				usernameToRealNameMap[member.UserName] = member.RealName
+			}
+
+			// 填充真实姓名
+			for i := range data {
+				if data[i].ConfirmState.ConfirmUsername != "" {
+					if realName, exists := usernameToRealNameMap[data[i].ConfirmState.ConfirmUsername]; exists {
+						data[i].ConfirmState.ConfirmUsernameRealName = realName
+					}
+				}
+			}
+		}
 	}
 
 	return types.ResponseHistoryEventList{

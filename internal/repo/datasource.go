@@ -2,8 +2,9 @@ package repo
 
 import (
 	"fmt"
-	"gorm.io/gorm"
 	"watchAlert/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -51,6 +52,10 @@ func (ds DatasourceRepo) List(tenantId, datasourceId, datasourceType, query stri
 	if err != nil {
 		return nil, err
 	}
+
+	// Enrich UpdateByRealName using common function
+	EnrichUpdateByRealName(ds.DB(), &data)
+
 	return data, nil
 }
 

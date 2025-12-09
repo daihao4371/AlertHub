@@ -52,6 +52,11 @@ func (sr SilenceRepo) List(tenantId, faultCenterId, query string, page models.Pa
 		return nil, 0, err
 	}
 
+	// Enrich UpdateByRealName using common function
+	if len(silenceList) > 0 {
+		EnrichUpdateByRealName(sr.DB(), &silenceList)
+	}
+
 	return silenceList, count, nil
 }
 

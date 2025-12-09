@@ -1,8 +1,9 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"watchAlert/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -48,6 +49,10 @@ func (nr NoticeTmplRepo) List(id, noticeType, query string) ([]models.NoticeTemp
 	if err != nil {
 		return nil, err
 	}
+
+	// Enrich UpdateByRealName using common function
+	EnrichUpdateByRealName(nr.db, &data)
+
 	return data, nil
 }
 

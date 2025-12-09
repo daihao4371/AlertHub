@@ -56,10 +56,90 @@ func (d DutyRepo) List(tenantId string) ([]models.DutyManagement, error) {
 		return nil, err
 	}
 
+	// Collect all user IDs and usernames that need realName enrichment
+	userIdsMap := make(map[string]bool)
+	usernamesMap := make(map[string]bool)
+	for _, value := range data {
+		// Collect manager userid
+		if value.Manager.UserId != "" {
+			userIdsMap[value.Manager.UserId] = true
+		}
+		// Collect updateBy username
+		if value.UpdateBy != "" {
+			usernamesMap[value.UpdateBy] = true
+		}
+	}
+
+	// Get today's duty schedule and collect user IDs
 	for index, value := range data {
 		var dutySchedule models.DutySchedule
 		d.DB().Model(models.DutySchedule{}).Where("duty_id = ? and time = ?", value.ID, time.Now().Format("2006-1-2")).Find(&dutySchedule)
 		data[index].CurDutyUser = dutySchedule.Users
+
+		// Collect curDutyUser userids
+		for _, user := range dutySchedule.Users {
+			if user.UserId != "" {
+				userIdsMap[user.UserId] = true
+			}
+		}
+	}
+
+	// Batch query user information to enrich realName
+	userMap := make(map[string]string)               // userid -> realName
+	usernameToRealNameMap := make(map[string]string) // username -> realName
+	if len(userIdsMap) > 0 {
+		userIds := make([]string, 0, len(userIdsMap))
+		for userid := range userIdsMap {
+			userIds = append(userIds, userid)
+		}
+
+		// Query users by userids
+		var users []models.Member
+		d.DB().Model(&models.Member{}).Where("user_id IN ?", userIds).Find(&users)
+		for _, user := range users {
+			userMap[user.UserId] = user.RealName
+		}
+	}
+
+	// Query users by usernames for updateBy field
+	if len(usernamesMap) > 0 {
+		usernames := make([]string, 0, len(usernamesMap))
+		for username := range usernamesMap {
+			usernames = append(usernames, username)
+		}
+
+		// Query users by usernames
+		var users []models.Member
+		d.DB().Model(&models.Member{}).Where("user_name IN ?", usernames).Find(&users)
+		for _, user := range users {
+			usernameToRealNameMap[user.UserName] = user.RealName
+		}
+	}
+
+	// Enrich realName for Manager, CurDutyUser, and UpdateBy
+	for index := range data {
+		// Enrich manager realName
+		if data[index].Manager.UserId != "" {
+			if realName, exists := userMap[data[index].Manager.UserId]; exists {
+				data[index].Manager.RealName = realName
+			}
+		}
+
+		// Enrich curDutyUser realName
+		for i := range data[index].CurDutyUser {
+			if data[index].CurDutyUser[i].UserId != "" {
+				if realName, exists := userMap[data[index].CurDutyUser[i].UserId]; exists {
+					data[index].CurDutyUser[i].RealName = realName
+				}
+			}
+		}
+
+		// Enrich updateBy realName
+		if data[index].UpdateBy != "" {
+			if realName, exists := usernameToRealNameMap[data[index].UpdateBy]; exists {
+				data[index].UpdateByRealName = realName
+			}
+		}
 	}
 
 	return data, nil
