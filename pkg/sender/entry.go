@@ -105,8 +105,9 @@ func senderFactory(noticeType string) (SendInter, error) {
 }
 
 // addRecord 记录通知发送结果
+// 注意：保存记录失败不会影响通知发送的成功，仅记录警告日志
 func addRecord(ctx *ctx.Context, sendParams SendParams, status int, msg, errMsg string) {
-	err := ctx.DB.Notice().AddRecord(models.NoticeRecord{
+	record := models.NoticeRecord{
 		EventId:  sendParams.EventId,
 		Date:     time.Now().Format("2006-01-02"),
 		CreateAt: time.Now().Unix(),
@@ -118,9 +119,11 @@ func addRecord(ctx *ctx.Context, sendParams SendParams, status int, msg, errMsg 
 		Status:   status,
 		AlarmMsg: msg,
 		ErrMsg:   errMsg,
-	})
+	}
+
+	err := ctx.DB.Notice().AddRecord(record)
 	if err != nil {
-		logc.Errorf(ctx.Ctx, fmt.Sprintf("Add notice record failed, err: %s", err.Error()))
+		logc.Error(ctx.Ctx, fmt.Sprintf("添加通知记录失败, err: %s", err.Error()))
 	}
 }
 

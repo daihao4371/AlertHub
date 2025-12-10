@@ -63,6 +63,7 @@ func InitBasic() {
 	}
 
 	// 初始化快捷操作配置缓存（供通知模板使用）
+	// 配置来源：系统设置页面 → MySQL数据库 → settings表 → quick_action_config字段
 	initQuickActionConfig(r.QuickActionConfig)
 
 	if r.AuthType != nil && *r.AuthType == models.SettingLdapAuth {
@@ -176,10 +177,12 @@ func pushMuteRuleToRedis() {
 }
 
 // initQuickActionConfig 初始化快捷操作配置缓存
+// 配置来源：系统设置页面 → MySQL数据库 → settings表 → quick_action_config字段（JSON格式）
 // 该配置供通知模板层使用，避免模板层直接调用 repo 层
+// 配置可通过系统设置页面实时修改，修改后立即生效（无需重启服务）
 func initQuickActionConfig(config models.QuickActionConfig) {
 	templates.SetQuickActionConfig(config)
-	logc.Info(context.Background(), "快捷操作配置已加载")
+	logc.Info(context.Background(), "快捷操作配置已从数据库加载并缓存到内存")
 }
 
 // exporterMonitorScheduler Exporter 健康巡检调度器

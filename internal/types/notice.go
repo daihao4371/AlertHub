@@ -52,6 +52,7 @@ type RequestNoticeQuery struct {
 
 type RequestNoticeTest struct {
 	NoticeType  string         `json:"noticeType"`
+	Name        string         `json:"name"` // 通知对象名称（用于识别关键词）
 	DefaultHook string         `json:"hook"`
 	DefaultSign string         `json:"sign"`
 	Routes      []models.Route `json:"routes"`

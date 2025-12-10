@@ -15,7 +15,8 @@ func NewTemplate(ctx *ctx.Context, alert models.AlertCurEvent, notice models.Ale
 	case "FeiShu":
 		return Template{CardContentMsg: feishuTemplate(alert, noticeTmpl)}
 	case "DingDing":
-		return Template{CardContentMsg: dingdingTemplate(alert, noticeTmpl)}
+		// 传递通知对象以便获取关键词配置（如果后续添加）
+		return Template{CardContentMsg: dingdingTemplate(alert, noticeTmpl, notice)}
 	case "Email":
 		return Template{CardContentMsg: emailTemplate(alert, noticeTmpl)}
 	case "WeChat":

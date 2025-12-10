@@ -33,17 +33,24 @@ func getQuickActionConfig() models2.QuickActionConfig {
 // 支持两种模式：
 // 1. Markdown 模式（默认）- 传统文本消息
 // 2. ActionCard 模式 - 带快捷操作按钮的卡片消息
-func dingdingTemplate(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample) string {
+func dingdingTemplate(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample, notice models2.AlertNotice) string {
+	// 检查模板级别的快捷操作开关（如果未设置，默认启用以保持向后兼容）
+	enableQuickAction := noticeTmpl.EnableQuickAction == nil || *noticeTmpl.EnableQuickAction
+	if !enableQuickAction {
+		// 如果模板级别禁用了快捷操作，直接使用 Markdown 模式
+		return buildDingdingMarkdown(alert, noticeTmpl, notice)
+	}
+
 	// 获取快捷操作配置
 	quickConfig := getQuickActionConfig()
 
 	// 如果启用快捷操作且配置了 BaseUrl 和 SecretKey，使用 ActionCard 模式
 	if quickConfig.GetEnable() && quickConfig.BaseUrl != "" && quickConfig.SecretKey != "" {
-		return buildDingdingActionCard(alert, noticeTmpl, quickConfig)
+		return buildDingdingActionCard(alert, noticeTmpl, quickConfig, notice)
 	}
 
 	// 否则使用传统 Markdown 模式
-	return buildDingdingMarkdown(alert, noticeTmpl)
+	return buildDingdingMarkdown(alert, noticeTmpl, notice)
 }
 
 // highlightAlertFields 高亮告警消息中的关键字段
@@ -200,7 +207,7 @@ func highlightAlertFields(text string, alert models2.AlertCurEvent) string {
 }
 
 // buildDingdingMarkdown 构建钉钉 Markdown 消息（传统模式）
-func buildDingdingMarkdown(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample) string {
+func buildDingdingMarkdown(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample, notice models2.AlertNotice) string {
 	Title := ParserTemplate("Title", alert, noticeTmpl.Template)
 	Footer := ParserTemplate("Footer", alert, noticeTmpl.Template)
 	EventText := ParserTemplate("Event", alert, noticeTmpl.Template)
@@ -216,11 +223,22 @@ func buildDingdingMarkdown(alert models2.AlertCurEvent, noticeTmpl models2.Notic
 		dutyUsers = append(dutyUsers, u)
 	}
 
+	// 钉钉关键词处理：在消息内容中添加关键词以满足钉钉机器人的关键词验证要求
+	// 注意：钉钉的关键词验证要求关键词必须是独立的词，不能只是包含在其他词中
+	// 例如："告警中"包含"告警"，但钉钉可能要求独立的"告警"这个词
+	// 因此，无论标题和文本中是否包含关键词，都在消息开头添加关键词，确保通过验证
+	dingdingKeyword := getDingdingKeyword(notice)
+	keywordPrefix := ""
+	if dingdingKeyword != "" {
+		// 始终在消息开头添加关键词，确保钉钉能识别到独立的关键词
+		keywordPrefix = dingdingKeyword + " "
+	}
+
 	t := models2.DingMsg{
 		Msgtype: "markdown",
 		Markdown: &models2.Markdown{
-			Title: Title,
-			Text: "**" + Title + "**" +
+			Title: keywordPrefix + Title,
+			Text: keywordPrefix + "**" + Title + "**" +
 				"\n" + "\n" +
 				EventText +
 				"\n" +
@@ -246,10 +264,10 @@ func buildDingdingMarkdown(alert models2.AlertCurEvent, noticeTmpl models2.Notic
 }
 
 // buildDingdingActionCard 构建钉钉 ActionCard 消息（带快捷操作按钮）
-func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample, config models2.QuickActionConfig) string {
+func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample, config models2.QuickActionConfig, notice models2.AlertNotice) string {
 	// 如果告警已恢复，不显示快捷操作按钮，使用 Markdown 模式
 	if alert.IsRecovered {
-		return buildDingdingMarkdown(alert, noticeTmpl)
+		return buildDingdingMarkdown(alert, noticeTmpl, notice)
 	}
 
 	Title := ParserTemplate("Title", alert, noticeTmpl.Template)
@@ -267,7 +285,7 @@ func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.Not
 	)
 	if err != nil {
 		// Token 生成失败，降级为 Markdown 模式
-		return buildDingdingMarkdown(alert, noticeTmpl)
+		return buildDingdingMarkdown(alert, noticeTmpl, notice)
 	}
 
 	// 确定 API 调用地址（优先使用 ApiUrl，否则使用 BaseUrl）
@@ -276,13 +294,24 @@ func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.Not
 		apiUrl = config.BaseUrl // 向后兼容：如果没有配置 ApiUrl，使用 BaseUrl
 	}
 
+	// 钉钉关键词处理：在消息内容中添加关键词以满足钉钉机器人的关键词验证要求
+	// 注意：钉钉的关键词验证要求关键词必须是独立的词，不能只是包含在其他词中
+	// 例如："告警中"包含"告警"，但钉钉可能要求独立的"告警"这个词
+	// 因此，无论标题和文本中是否包含关键词，都在消息开头添加关键词，确保通过验证
+	dingdingKeyword := getDingdingKeyword(notice)
+	keywordPrefix := ""
+	if dingdingKeyword != "" {
+		// 始终在消息开头添加关键词，确保钉钉能识别到独立的关键词
+		keywordPrefix = dingdingKeyword + " "
+	}
+
 	// 构建 ActionCard 消息（使用钉钉官方字段名）
 	// 注意：ActionCard 模式下不应包含 markdown 和 at 字段
 	card := models2.DingMsg{
 		Msgtype: "actionCard",
 		ActionCard: &models2.ActionCard{
-			Title:          Title,
-			Text:           "#### " + Title + "\n\n" + EventText,
+			Title:          keywordPrefix + Title,
+			Text:           keywordPrefix + "#### " + Title + "\n\n" + EventText,
 			BtnOrientation: "1", // 按钮纵向排列，移动端体验更好
 			Btns: []models2.ActionCardBtn{
 				// 认领告警按钮
@@ -325,4 +354,27 @@ func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.Not
 	}
 
 	return tools.JsonMarshalToString(card)
+}
+
+// getDingdingKeyword 获取钉钉关键词
+// 钉钉机器人如果配置了关键词验证，消息内容中必须包含关键词才能发送成功
+// 目前使用默认关键词"告警"，后续可以扩展为从通知对象配置中读取
+func getDingdingKeyword(notice models2.AlertNotice) string {
+	// 默认关键词：告警（最常见的钉钉机器人关键词）
+	// 如果钉钉机器人配置了其他关键词（如"报警"、"Alert"等），
+	// 可以：
+	// 1. 在通知模板的标题或内容中包含该关键词
+	// 2. 或者后续添加配置项支持自定义关键词
+	defaultKeyword := "告警"
+
+	// 检查通知对象名称中是否包含关键词提示（可选）
+	// 例如：如果通知对象名称包含"报警"，则使用"报警"作为关键词
+	if strings.Contains(notice.Name, "报警") {
+		return "报警"
+	}
+	if strings.Contains(notice.Name, "Alert") {
+		return "Alert"
+	}
+
+	return defaultKeyword
 }
