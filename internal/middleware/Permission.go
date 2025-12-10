@@ -2,14 +2,15 @@ package middleware
 
 import (
 	"fmt"
-	"github.com/bytedance/sonic"
-	"github.com/gin-gonic/gin"
-	"github.com/zeromicro/go-zero/core/logc"
-	"gorm.io/gorm"
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/models"
 	"watchAlert/pkg/response"
 	utils2 "watchAlert/pkg/tools"
+
+	"github.com/bytedance/sonic"
+	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 )
 
 func Permission() gin.HandlerFunc {
@@ -45,7 +46,7 @@ func Permission() gin.HandlerFunc {
 		context.Set("UserEmail", user.Email)
 
 		// 获取租户用户角色
-		tenantUserInfo, _ := c.DB.Tenant().GetTenantLinkedUserInfo(tid, userId)
+		tenantUserInfo, err := c.DB.Tenant().GetTenantLinkedUserInfo(tid, userId)
 		if err != nil {
 			logc.Errorf(c.Ctx, fmt.Sprintf("获取租户用户角色失败 %s", err.Error()))
 			response.TokenFail(context)

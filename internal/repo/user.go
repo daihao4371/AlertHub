@@ -3,12 +3,13 @@ package repo
 import (
 	"context"
 	"fmt"
-	"github.com/bytedance/sonic"
-	"github.com/zeromicro/go-zero/core/logc"
-	"gorm.io/gorm"
 	"watchAlert/internal/models"
 	"watchAlert/pkg/client"
 	"watchAlert/pkg/tools"
+
+	"github.com/bytedance/sonic"
+	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 )
 
 type (
@@ -89,16 +90,18 @@ func (ur UserRepo) Create(r models.Member) error {
 		return err
 	}
 
-	if r.UserId == "admin" {
-		r.Tenants = append(r.Tenants, "default")
-		err = ur.g.Updates(Updates{
-			Table: models.Member{},
-			Where: map[string]interface{}{
-				"user_id = ?": r.UserId,
-			},
-			Updates: r,
-		})
-	}
+	// 注意：Tenants字段已经在service层的applyDefaults中设置，不需要在这里重复追加
+	// 移除以下逻辑，避免重复添加default租户导致查询时返回重复记录
+	// if r.UserId == "admin" {
+	// 	r.Tenants = append(r.Tenants, "default")
+	// 	err = ur.g.Updates(Updates{
+	// 		Table: models.Member{},
+	// 		Where: map[string]interface{}{
+	// 			"user_id = ?": r.UserId,
+	// 		},
+	// 		Updates: r,
+	// 	})
+	// }
 
 	return nil
 }

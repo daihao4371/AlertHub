@@ -4,13 +4,15 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/zeromicro/go-zero/core/logc"
 	"time"
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/global"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
 	"watchAlert/pkg/tools"
+
+	"github.com/zeromicro/go-zero/core/logc"
+	"gorm.io/gorm"
 )
 
 type userService struct {
@@ -108,21 +110,65 @@ func (us userService) Login(req interface{}) (interface{}, interface{}) {
 func (us userService) Register(req interface{}) (interface{}, interface{}) {
 	r := req.(*types.RequestUserCreate)
 
-	_, ok, _ := us.ctx.DB.User().Get("", r.UserName, "")
-	if ok {
-		return nil, fmt.Errorf("用户已存在")
+	// 验证用户名唯一性
+	if err := us.validateUserNotExists(r.UserName); err != nil {
+		return nil, err
 	}
 
-	// 在初始化admin用户时会固定一个userid，所以这里需要做一下判断；
-	if r.UserId == "" {
-		r.UserId = tools.RandUid()
+	// 应用默认值
+	us.applyDefaults(r)
+
+	// 创建用户
+	user := us.buildUserModel(r)
+	if err := us.ctx.DB.User().Create(user); err != nil {
+		return nil, fmt.Errorf("创建用户失败: %w", err)
 	}
 
-	if r.CreateBy == "" {
-		r.CreateBy = "system"
+	// 关联租户
+	if err := us.associateTenants(r); err != nil {
+		logc.Errorf(us.ctx.Ctx, "关联租户失败: %s", err.Error())
 	}
 
-	err := us.ctx.DB.User().Create(models.Member{
+	return nil, nil
+}
+
+// applyDefaults 应用默认值
+func (us userService) applyDefaults(r *types.RequestUserCreate) {
+	defaults := map[string]*string{
+		"UserId":   &r.UserId,
+		"CreateBy": &r.CreateBy,
+		"RealName": &r.RealName,
+	}
+
+	defaultValues := map[string]string{
+		"UserId":   "888",
+		"CreateBy": "system",
+		"RealName": "超管",
+	}
+
+	for field, ptr := range defaults {
+		if *ptr == "" {
+			*ptr = defaultValues[field]
+		}
+	}
+
+	if len(r.Tenants) == 0 {
+		r.Tenants = []string{"default"}
+	}
+}
+
+// validateUserNotExists 验证用户名是否已存在
+func (us userService) validateUserNotExists(userName string) error {
+	_, exists, _ := us.ctx.DB.User().Get("", userName, "")
+	if exists {
+		return fmt.Errorf("用户已存在")
+	}
+	return nil
+}
+
+// buildUserModel 构建用户模型
+func (us userService) buildUserModel(r *types.RequestUserCreate) models.Member {
+	return models.Member{
 		UserId:     r.UserId,
 		UserName:   r.UserName,
 		RealName:   r.RealName,
@@ -135,12 +181,170 @@ func (us userService) Register(req interface{}) (interface{}, interface{}) {
 		JoinDuty:   r.JoinDuty,
 		DutyUserId: r.DutyUserId,
 		Tenants:    r.Tenants,
-	})
-	if err != nil {
-		return nil, err
+	}
+}
+
+// associateTenants 关联租户
+func (us userService) associateTenants(r *types.RequestUserCreate) error {
+	if !us.containsTenant(r.Tenants, "default") {
+		return nil
 	}
 
-	return nil, nil
+	if err := us.ensureDefaultTenant(); err != nil {
+		return fmt.Errorf("准备默认租户失败: %w", err)
+	}
+
+	userRole := us.normalizeRole(r.Role)
+	return us.addUserToTenant("default", r.UserId, r.UserName, userRole)
+}
+
+// ensureDefaultTenant 确保默认租户存在（使用事务和行锁确保原子性）
+func (us userService) ensureDefaultTenant() error {
+	// 先清理可能存在的重复记录（只保留一条，按update_at排序保留最早的）
+	us.cleanupDuplicateDefaultTenantsOnce()
+
+	// 使用数据库事务确保操作的原子性
+	return us.ctx.DB.DB().Transaction(func(tx *gorm.DB) error {
+		// 使用First方法查询，FOR UPDATE加行锁防止并发创建
+		var existingTenant models.Tenant
+		err := tx.Model(&models.Tenant{}).
+			Where("id = ?", "default").
+			Set("gorm:query_option", "FOR UPDATE").
+			First(&existingTenant).Error
+
+		if err == nil {
+			// 租户已存在，只需确保关联记录存在
+			return us.ensureTenantLinkInTx(tx)
+		}
+
+		if err != gorm.ErrRecordNotFound {
+			// 其他错误，返回
+			return err
+		}
+
+		// 租户不存在，创建它
+		removeProtection := true
+		tenant := models.Tenant{
+			ID:               "default",
+			Name:             "default",
+			Manager:          "admin",
+			Description:      "default 租户",
+			UserNumber:       999,
+			RuleNumber:       999,
+			DutyNumber:       999,
+			NoticeNumber:     999,
+			RemoveProtection: &removeProtection,
+			UpdateAt:         time.Now().Unix(),
+		}
+
+		// 在事务中创建租户（主键约束会防止重复）
+		if err := tx.Model(&models.Tenant{}).Create(&tenant).Error; err != nil {
+			// 如果创建失败（可能是并发创建或主键冲突），再次检查
+			var checkTenant models.Tenant
+			if checkErr := tx.Model(&models.Tenant{}).
+				Where("id = ?", "default").
+				First(&checkTenant).Error; checkErr == nil {
+				// 租户已存在（并发创建成功），继续
+			} else {
+				// 真正的错误，返回
+				return fmt.Errorf("创建默认租户失败: %w", err)
+			}
+		}
+
+		// 确保关联记录存在
+		return us.ensureTenantLinkInTx(tx)
+	})
+}
+
+// cleanupDuplicateDefaultTenantsOnce 清理重复的default租户（只保留一条，按update_at排序保留最早的）
+func (us userService) cleanupDuplicateDefaultTenantsOnce() {
+	var tenants []models.Tenant
+	err := us.ctx.DB.DB().Model(&models.Tenant{}).
+		Where("id = ?", "default").
+		Order("update_at ASC").
+		Find(&tenants).Error
+
+	if err != nil || len(tenants) <= 1 {
+		return
+	}
+
+	// 保留第一条（最早的），删除其他的
+	// 由于ID都是"default"，我们使用update_at来区分，保留最早的
+	keepUpdateAt := tenants[0].UpdateAt
+
+	// 删除除第一条外的所有记录（使用update_at区分）
+	us.ctx.DB.DB().Model(&models.Tenant{}).
+		Where("id = ? AND update_at != ?", "default", keepUpdateAt).
+		Delete(&models.Tenant{})
+}
+
+// ensureTenantLinkInTx 在事务中确保租户关联记录存在
+func (us userService) ensureTenantLinkInTx(tx *gorm.DB) error {
+	var existingLink models.TenantLinkedUsers
+	err := tx.Model(&models.TenantLinkedUsers{}).
+		Where("id = ?", "default").
+		First(&existingLink).Error
+
+	if err == nil {
+		// 关联记录已存在
+		return nil
+	}
+
+	if err != gorm.ErrRecordNotFound {
+		// 其他错误
+		return err
+	}
+
+	// 关联记录不存在，创建它
+	link := models.TenantLinkedUsers{
+		ID:    "default",
+		Users: []models.TenantUser{},
+	}
+
+	if err := tx.Model(&models.TenantLinkedUsers{}).Create(&link).Error; err != nil {
+		// 如果创建失败（可能是并发创建），再次检查
+		var checkLink models.TenantLinkedUsers
+		if checkErr := tx.Model(&models.TenantLinkedUsers{}).
+			Where("id = ?", "default").
+			First(&checkLink).Error; checkErr == nil {
+			// 关联记录已存在（并发创建成功），忽略错误
+			return nil
+		}
+		return err
+	}
+
+	return nil
+}
+
+// ensureTenantLink 确保租户关联记录存在（兼容旧代码，内部调用ensureTenantLinkInTx）
+func (us userService) ensureTenantLink() error {
+	return us.ensureTenantLinkInTx(us.ctx.DB.DB())
+}
+
+// containsTenant 检查租户列表是否包含指定租户
+func (us userService) containsTenant(tenants []string, target string) bool {
+	for _, t := range tenants {
+		if t == target {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeRole 规范化角色（空值使用默认角色）
+func (us userService) normalizeRole(role string) string {
+	if role == "" {
+		return "admin"
+	}
+	return role
+}
+
+// addUserToTenant 添加用户到租户
+func (us userService) addUserToTenant(tenantId, userId, userName, userRole string) error {
+	return us.ctx.DB.Tenant().AddTenantLinkedUsers(tenantId,
+		[]models.TenantUser{{UserID: userId, UserName: userName}},
+		userRole,
+	)
 }
 
 func (us userService) Update(req interface{}) (interface{}, interface{}) {

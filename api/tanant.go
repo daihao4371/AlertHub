@@ -4,6 +4,7 @@ import (
 	middleware "watchAlert/internal/middleware"
 	"watchAlert/internal/services"
 	"watchAlert/internal/types"
+	jwtUtils "watchAlert/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )
@@ -74,6 +75,14 @@ func (tenantController tenantController) Delete(ctx *gin.Context) {
 func (tenantController tenantController) List(ctx *gin.Context) {
 	r := new(types.RequestTenantQuery)
 	BindQuery(ctx, r)
+
+	// 如果请求参数中没有 UserID，从 token 中获取当前登录用户的 ID
+	if r.UserID == "" {
+		tokenStr := ctx.Request.Header.Get("Authorization")
+		if tokenStr != "" {
+			r.UserID = jwtUtils.GetUserID(tokenStr)
+		}
+	}
 
 	Service(ctx, func() (interface{}, interface{}) {
 		return services.TenantService.List(r)
