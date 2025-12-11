@@ -9,6 +9,7 @@ import (
 	"watchAlert/internal/ctx"
 	"watchAlert/internal/models"
 	"watchAlert/internal/types"
+	"watchAlert/pkg/quickaction"
 	"watchAlert/pkg/tools"
 )
 
@@ -53,6 +54,13 @@ func (e eventService) ProcessAlertEvent(req interface{}) (interface{}, interface
 			cache.ConfirmState.ConfirmActionTime = r.Time
 
 			e.ctx.Redis.Alert().PushAlertEvent(&cache)
+
+			// 发送确认消息到群聊(异步，失败不影响主流程)
+			go func() {
+				if err := quickaction.SendConfirmationMessage(e.ctx, &cache, "claim", r.Username); err != nil {
+					fmt.Printf("发送确认消息失败: %v\n", err)
+				}
+			}()
 		}(fingerprint)
 	}
 
