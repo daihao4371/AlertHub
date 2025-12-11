@@ -256,6 +256,7 @@ func (q *quickActionService) silenceAlert(tenantId, fingerprint, duration, usern
 	q.createAuditLog(tenantId, username, clientIP, "快捷操作-静默告警", auditData)
 
 	// 更新Redis中的告警状态为静默
+	// 注意: 如果告警未被认领，静默操作时自动认领（静默的人就是认领人）
 	if targetAlert.FaultCenterId != "" {
 		// 计算剩余静默时间
 		now := time.Now().Unix()
@@ -270,13 +271,24 @@ func (q *quickActionService) silenceAlert(tenantId, fingerprint, duration, usern
 			Comment:       silence.Comment,
 		}
 
+		// 如果告警未被认领，静默操作时自动认领
+		// 业务逻辑：执行静默操作的用户通常意味着正在处理该告警，应该自动认领
+		if !targetAlert.ConfirmState.IsOk {
+			targetAlert.ConfirmState.IsOk = true
+			targetAlert.ConfirmState.ConfirmUsername = username
+			targetAlert.ConfirmState.ConfirmActionTime = now
+		}
+		// 如果已经被认领，保留原有的认领状态（不覆盖）
+
 		// 更新状态为静默中
+		// 注意: TransitionStatus 不会影响 ConfirmState，认领状态会被保留
 		if err := targetAlert.TransitionStatus(models.StateSilenced); err != nil {
 			// 状态转换失败,记录但不中断流程
 			fmt.Printf("告警状态转换失败: %v\n", err)
 		}
 
-		// 推送到Redis
+		// 推送到Redis（包含完整的告警信息，包括认领状态）
+		// 注意: targetAlert 是从 GetAlertByFingerprint 获取的完整对象，包含所有字段
 		q.ctx.Redis.Alert().PushAlertEvent(targetAlert)
 	}
 	// 注意: 对于未接入故障中心的拨测告警,它们的静默由拨测worker自己处理

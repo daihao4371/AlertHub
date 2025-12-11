@@ -66,7 +66,7 @@ func (ass alertSilenceService) Create(req interface{}) (interface{}, interface{}
 		}
 	}
 
-	// 如果找到了fingerprint，说明是针对特定告警的静默，需要发送消息推送
+	// 如果找到了fingerprint，说明是针对特定告警的静默，需要更新认领状态并发送消息推送
 	if fingerprint != "" {
 		// 计算静默时长（用于消息显示）
 		if r.EndsAt > r.StartsAt {
@@ -75,12 +75,27 @@ func (ass alertSilenceService) Create(req interface{}) (interface{}, interface{}
 			duration = quickaction.FormatDurationChinese(dur.String())
 		}
 
-		// 异步获取告警信息并发送确认消息
+		// 异步获取告警信息，更新认领状态并发送确认消息
 		go func() {
 			// 尝试从缓存中获取告警信息
 			if r.FaultCenterId != "" {
 				alert, err := ass.ctx.Redis.Alert().GetEventFromCache(r.TenantId, r.FaultCenterId, fingerprint)
 				if err == nil {
+					// 如果告警未被认领，静默操作时自动认领（静默的人就是认领人）
+					// 业务逻辑：执行静默操作的用户通常意味着正在处理该告警，应该自动认领
+					needUpdate := false
+					if !alert.ConfirmState.IsOk {
+						alert.ConfirmState.IsOk = true
+						alert.ConfirmState.ConfirmUsername = r.UpdateBy
+						alert.ConfirmState.ConfirmActionTime = updateAt
+						needUpdate = true
+					}
+
+					// 如果更新了认领状态，需要推送到Redis
+					if needUpdate {
+						ass.ctx.Redis.Alert().PushAlertEvent(&alert)
+					}
+
 					// 发送确认消息到群聊(异步，失败不影响主流程)
 					if err := quickaction.SendConfirmationMessage(ass.ctx, &alert, "silence", r.UpdateBy, duration); err != nil {
 						fmt.Printf("发送确认消息失败: %v\n", err)

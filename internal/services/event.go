@@ -167,11 +167,13 @@ func (e eventService) ListCurrentEvent(req interface{}) (interface{}, interface{
 	paginatedList := pageSlice(filteredEvents, int(r.Page.Index), int(r.Page.Size))
 
 	// 批量查询并填充认领人真实姓名
+	// 只处理已认领的告警（IsOk = true 且 ConfirmUsername 不为空）
 	if len(paginatedList) > 0 {
-		// 收集所有需要查询的用户名
+		// 收集所有需要查询的用户名（只收集已认领的）
 		usernamesMap := make(map[string]bool)
 		for _, event := range paginatedList {
-			if event.ConfirmState.ConfirmUsername != "" {
+			// 只处理已认领的告警
+			if event.ConfirmState.IsOk && event.ConfirmState.ConfirmUsername != "" {
 				usernamesMap[event.ConfirmState.ConfirmUsername] = true
 			}
 		}
@@ -192,9 +194,10 @@ func (e eventService) ListCurrentEvent(req interface{}) (interface{}, interface{
 				usernameToRealNameMap[member.UserName] = member.RealName
 			}
 
-			// 填充真实姓名
+			// 填充真实姓名（只填充已认领的告警）
 			for i := range paginatedList {
-				if paginatedList[i].ConfirmState.ConfirmUsername != "" {
+				// 只处理已认领的告警
+				if paginatedList[i].ConfirmState.IsOk && paginatedList[i].ConfirmState.ConfirmUsername != "" {
 					if realName, exists := usernameToRealNameMap[paginatedList[i].ConfirmState.ConfirmUsername]; exists {
 						paginatedList[i].ConfirmState.ConfirmUsernameRealName = realName
 					}
