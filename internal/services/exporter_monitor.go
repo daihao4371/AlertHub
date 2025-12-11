@@ -3,9 +3,9 @@ package services
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/exporter"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/exporter"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

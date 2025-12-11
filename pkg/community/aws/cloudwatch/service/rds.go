@@ -3,9 +3,9 @@ package service
 import (
 	"context"
 	"github.com/aws/aws-sdk-go-v2/service/rds"
-	"watchAlert/internal/ctx"
-	"watchAlert/pkg/community/aws/cloudwatch/types"
-	"watchAlert/pkg/provider"
+	"alertHub/internal/ctx"
+	"alertHub/pkg/community/aws/cloudwatch/types"
+	"alertHub/pkg/provider"
 )
 
 type (

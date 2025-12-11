@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/types"
+	"alertHub/internal/middleware"
+	"alertHub/internal/types"
 )
 
 type kubernetesTypesController struct{}

@@ -3,11 +3,11 @@ package api
 import (
 	"github.com/gin-gonic/gin"
 	"time"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/response"
-	utils "watchAlert/pkg/tools"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	"alertHub/pkg/response"
+	utils "alertHub/pkg/tools"
 )
 
 type alertEventController struct{}

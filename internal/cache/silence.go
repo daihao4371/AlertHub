@@ -4,9 +4,9 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/go-redis/redis"
 	"sync"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/client"
+	"alertHub/pkg/tools"
 )
 
 type (

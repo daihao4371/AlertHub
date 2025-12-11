@@ -3,7 +3,7 @@ package provider
 import (
 	"fmt"
 	"time"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type Ssler struct{}

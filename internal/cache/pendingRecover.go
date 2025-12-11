@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"sync"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type (

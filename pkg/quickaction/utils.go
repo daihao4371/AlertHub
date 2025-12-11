@@ -3,8 +3,8 @@ package quickaction
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 )
 
 // FindActiveSilenceByFingerprint 查找指定指纹的激活静默规则

@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/url"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/response"
-	"watchAlert/pkg/tools"
-	"watchAlert/pkg/utils"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/response"
+	"alertHub/pkg/tools"
+	"alertHub/pkg/utils"
 )
 
 // QuickActionAuth 快捷操作Token验证中间件

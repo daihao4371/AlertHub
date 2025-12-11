@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 	"testing"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 func TestOpenAiChatCompletion(t *testing.T) {

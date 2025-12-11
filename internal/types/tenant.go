@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestTenantCreate 请求创建租户
 type RequestTenantCreate struct {

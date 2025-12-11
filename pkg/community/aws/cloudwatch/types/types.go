@@ -4,7 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"time"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 var NamespaceMetricsMap = map[string][]string{

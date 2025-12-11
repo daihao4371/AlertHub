@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/quickaction"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/quickaction"
+	"alertHub/pkg/tools"
 )
 
 type eventService struct {

@@ -1,8 +1,8 @@
 package templates
 
 import (
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 func slackTemplate(alert models.AlertCurEvent, noticeTmpl models.NoticeTemplateExample) string {

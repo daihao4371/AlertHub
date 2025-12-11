@@ -4,10 +4,10 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/response"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/response"
+	"alertHub/pkg/tools"
 )
 
 func Auth() gin.HandlerFunc {

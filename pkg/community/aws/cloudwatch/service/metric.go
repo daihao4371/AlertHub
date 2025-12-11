@@ -1,8 +1,8 @@
 package service
 
 import (
-	"watchAlert/internal/ctx"
-	types2 "watchAlert/pkg/community/aws/cloudwatch/types"
+	"alertHub/internal/ctx"
+	types2 "alertHub/pkg/community/aws/cloudwatch/types"
 )
 
 type (

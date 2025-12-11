@@ -9,12 +9,12 @@ import (
 	"net/http"
 	"strings"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/global"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/oidc"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/global"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/oidc"
+	"alertHub/pkg/tools"
 )
 
 type oidcService struct {

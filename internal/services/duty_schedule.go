@@ -5,10 +5,10 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"sync"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 )
 
 type dutyCalendarService struct {

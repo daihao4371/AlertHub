@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/cloudwatch/types"
 	log "github.com/sirupsen/logrus"
 	"time"
-	types2 "watchAlert/pkg/community/aws/cloudwatch/types"
+	types2 "alertHub/pkg/community/aws/cloudwatch/types"
 )
 
 func MetricDataQuery(client *cloudwatch.Client, query types2.CloudWatchQuery) ([]time.Time, []float64) {

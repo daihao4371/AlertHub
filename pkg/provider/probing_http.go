@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"time"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 const (

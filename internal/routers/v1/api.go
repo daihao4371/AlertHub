@@ -1,7 +1,7 @@
 package v1
 
 import (
-	"watchAlert/api"
+	"alertHub/api"
 
 	"github.com/gin-gonic/gin"
 )

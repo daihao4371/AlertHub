@@ -2,8 +2,8 @@ package quickaction
 
 import (
 	"fmt"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 )
 
 // GetWebhookFromAlert 从告警事件中反查Webhook配置

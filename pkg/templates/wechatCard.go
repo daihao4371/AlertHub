@@ -1,8 +1,8 @@
 package templates
 
 import (
-	models2 "watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	models2 "alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 func wechatTemplate(alert models2.AlertCurEvent, noticeTmpl models2.NoticeTemplateExample) string {

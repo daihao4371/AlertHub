@@ -3,7 +3,7 @@ package repo
 import (
 	"context"
 	"time"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/gorm"

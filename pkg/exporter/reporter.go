@@ -3,7 +3,7 @@ package exporter
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 // Reporter 报告生成器 - 负责生成 Exporter 健康巡检报告

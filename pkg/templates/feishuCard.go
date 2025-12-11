@@ -3,9 +3,9 @@ package templates
 import (
 	"fmt"
 	"strings"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
-	"watchAlert/pkg/utils"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
+	"alertHub/pkg/utils"
 
 	"github.com/bytedance/sonic"
 )

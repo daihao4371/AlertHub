@@ -8,13 +8,13 @@ WORKDIR /root
 
 COPY . /root
 
-RUN CGO_ENABLED=0 go build --ldflags="-X main.Version=${VERSION}" -o w8t . && \
-    chmod +x w8t
+RUN CGO_ENABLED=0 go build --ldflags="-X main.Version=${VERSION}" -o alerthub . && \
+    chmod +x alerthub
 
 FROM alpine:3.19
 
-COPY --from=build /root/w8t /app/w8t
+COPY --from=build /root/alerthub /app/alerthub
 
 WORKDIR /app
 
-ENTRYPOINT ["/app/w8t"]
+ENTRYPOINT ["/app/alerthub"]

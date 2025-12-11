@@ -3,11 +3,11 @@ package sender
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
+	"alertHub/internal/ctx"
 
 	"github.com/bytedance/sonic"
 
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

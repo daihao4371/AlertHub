@@ -2,9 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/models"
-	"watchAlert/internal/services"
+	"alertHub/internal/middleware"
+	"alertHub/internal/models"
+	"alertHub/internal/services"
 )
 
 type settingsController struct{}

@@ -3,8 +3,8 @@ package main
 import (
 	"net/http"
 	_ "net/http/pprof"
-	"watchAlert/initialization"
-	"watchAlert/internal/global"
+	"alertHub/initialization"
+	"alertHub/internal/global"
 )
 
 var Version string

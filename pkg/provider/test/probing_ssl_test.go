@@ -3,8 +3,8 @@ package test
 import (
 	"fmt"
 	"testing"
-	"watchAlert/pkg/provider"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/provider"
+	"alertHub/pkg/tools"
 )
 
 func TestNewEndpointSSLer(t *testing.T) {

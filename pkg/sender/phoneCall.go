@@ -3,9 +3,9 @@ package sender
 import (
 	"errors"
 	"fmt"
-	"watchAlert/internal/ctx"
+	"alertHub/internal/ctx"
 
-	"watchAlert/pkg/sender/aliyun"
+	"alertHub/pkg/sender/aliyun"
 )
 
 // PhoneCallSender 邮件发送策略

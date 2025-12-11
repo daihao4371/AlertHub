@@ -3,7 +3,7 @@ package types
 import (
 	"crypto/md5"
 	"encoding/hex"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type ESQueryFilter struct {

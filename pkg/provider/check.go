@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/zeromicro/go-zero/core/logc"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 // HealthChecker 统一健康检查接口

@@ -3,7 +3,7 @@ package repo
 import (
 	"fmt"
 	"time"
-	models "watchAlert/internal/models"
+	models "alertHub/internal/models"
 
 	"gorm.io/gorm"
 )

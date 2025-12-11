@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"sync"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 	"github.com/go-redis/redis"

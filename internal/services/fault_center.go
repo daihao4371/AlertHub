@@ -2,12 +2,12 @@ package services
 
 import (
 	"time"
-	"watchAlert/alert"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/tools"
+	"alertHub/alert"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/client"
+	"alertHub/pkg/tools"
 )
 
 type (

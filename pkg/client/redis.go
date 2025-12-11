@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"log"
-	"watchAlert/internal/global"
+	"alertHub/internal/global"
 )
 
 var Redis *redis.Client

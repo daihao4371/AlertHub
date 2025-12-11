@@ -2,10 +2,10 @@ package api
 
 import (
 	"errors"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )

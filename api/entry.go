@@ -4,7 +4,7 @@ import (
 	"context"
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"
-	"watchAlert/pkg/response"
+	"alertHub/pkg/response"
 )
 
 func Service(ctx *gin.Context, fu func() (interface{}, interface{})) {

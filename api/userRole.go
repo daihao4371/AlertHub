@@ -2,9 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	middleware "watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
+	middleware "alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
 )
 
 type userRoleController struct{}

@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestUserRoleCreate 请求创建用户角色
 type RequestUserRoleCreate struct {

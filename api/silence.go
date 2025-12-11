@@ -2,10 +2,10 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	middleware "watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	jwtUtils "watchAlert/pkg/tools"
+	middleware "alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	jwtUtils "alertHub/pkg/tools"
 )
 
 type silenceController struct{}

@@ -3,9 +3,9 @@ package exporter
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/provider"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/provider"
 
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logc"
