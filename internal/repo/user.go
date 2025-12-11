@@ -3,9 +3,9 @@ package repo
 import (
 	"context"
 	"fmt"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/client"
+	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"

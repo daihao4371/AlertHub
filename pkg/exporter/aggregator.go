@@ -3,8 +3,8 @@ package exporter
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

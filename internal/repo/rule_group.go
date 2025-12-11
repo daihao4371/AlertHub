@@ -3,7 +3,7 @@ package repo
 import (
 	"fmt"
 	"gorm.io/gorm"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 type (

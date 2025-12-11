@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestProbingRuleCreate 请求创建拨测规则
 type RequestProbingRuleCreate struct {

@@ -1,7 +1,7 @@
 package repo
 
 import (
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 
 	"gorm.io/gorm"
 )

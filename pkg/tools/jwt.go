@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/dgrijalva/jwt-go"
 	"time"
-	"watchAlert/internal/global"
+	"alertHub/internal/global"
 )
 
 // JwtCustomClaims 注册声明是JWT声明集的结构化版本，仅限于注册声明名称

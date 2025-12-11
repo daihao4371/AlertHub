@@ -5,8 +5,8 @@ import (
 	"io"
 	"strconv"
 	"time"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 type JaegerDsProvider struct {

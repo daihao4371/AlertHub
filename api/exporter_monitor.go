@@ -2,11 +2,11 @@ package api
 
 import (
 	"time"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/models"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/response"
+	"alertHub/internal/middleware"
+	"alertHub/internal/models"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	"alertHub/pkg/response"
 
 	"github.com/gin-gonic/gin"
 )

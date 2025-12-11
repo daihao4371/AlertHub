@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	models2 "watchAlert/internal/models"
-	"watchAlert/pkg/tools"
-	"watchAlert/pkg/utils"
+	models2 "alertHub/internal/models"
+	"alertHub/pkg/tools"
+	"alertHub/pkg/utils"
 )
 
 // quickActionConfig 快捷操作配置缓存（避免频繁查询数据库）

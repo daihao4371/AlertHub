@@ -3,10 +3,10 @@ package consumer
 import (
 	"fmt"
 	"time"
-	"watchAlert/alert/mute"
-	"watchAlert/alert/process"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/alert/mute"
+	"alertHub/alert/process"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

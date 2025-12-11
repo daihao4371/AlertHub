@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 type (

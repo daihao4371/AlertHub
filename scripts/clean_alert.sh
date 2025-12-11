@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# WatchAlert告警清理脚本
+# AlertHub告警清理脚本
 # 用途: 删除指定指纹的告警和相关缓存
 
 # 配置信息
@@ -12,7 +12,7 @@ REDIS_PASSWORD=""
 FINGERPRINT="11325167300741362178"
 RULE_NAME="飞书测试服务器CPU使用率监控"
 
-echo "=== WatchAlert 告警清理脚本 ==="
+echo "=== AlertHub 告警清理脚本 ==="
 echo "指纹: $FINGERPRINT"
 echo "规则名称: $RULE_NAME"
 echo ""

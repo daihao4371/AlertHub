@@ -2,10 +2,10 @@ package initialization
 
 import (
 	"context"
-	"watchAlert/internal/global"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/routers"
-	v1 "watchAlert/internal/routers/v1"
+	"alertHub/internal/global"
+	"alertHub/internal/middleware"
+	"alertHub/internal/routers"
+	v1 "alertHub/internal/routers/v1"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"

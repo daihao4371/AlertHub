@@ -1,11 +1,11 @@
 package api
 
 import (
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/response"
+	"alertHub/internal/ctx"
+	"alertHub/internal/middleware"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"

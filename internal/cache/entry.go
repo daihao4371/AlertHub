@@ -2,7 +2,7 @@ package cache
 
 import (
 	"github.com/go-redis/redis"
-	"watchAlert/pkg/client"
+	"alertHub/pkg/client"
 )
 
 type (

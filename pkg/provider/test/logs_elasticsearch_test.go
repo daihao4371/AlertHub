@@ -6,8 +6,8 @@ import (
 	"github.com/bytedance/sonic"
 	"github.com/sirupsen/logrus"
 	"testing"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/provider"
+	"alertHub/internal/models"
+	"alertHub/pkg/provider"
 )
 
 func TestNewElasticSearchClient(t *testing.T) {

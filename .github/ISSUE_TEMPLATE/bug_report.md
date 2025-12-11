@@ -9,7 +9,7 @@ assignees: ''
 
 ### 🐛 Bug Report
 
-感谢你为提升 WatchAlert 做出贡献！请按照以下模板填写 bug 报告，这将帮助我们更快地定位和解决问题。
+感谢你为提升 AlertHub 做出贡献！请按照以下模板填写 bug 报告，这将帮助我们更快地定位和解决问题。
 
 ---
 
@@ -51,7 +51,7 @@ assignees: ''
 
 - **操作系统**：如 Linux、macOS、Windows 等
 - **Go 版本**（如适用）：运行 `go version`
-- **WatchAlert 版本**：如 `main` 分支、`v1.2.0` 等
+- **AlertHub 版本**：如 `main` 分支、`v1.2.0` 等
 - **依赖版本**：如 Redis、MySQL、Prometheus 等（如适用）
 - **其他相关信息**：如部署方式（Docker、Kubernetes、本地运行等）
 

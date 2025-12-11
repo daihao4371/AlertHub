@@ -10,9 +10,9 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

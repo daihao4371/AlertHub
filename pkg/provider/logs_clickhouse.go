@@ -7,7 +7,7 @@ import (
 	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/zeromicro/go-zero/core/logc"
 	"time"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 type ClickHouseProvider struct {

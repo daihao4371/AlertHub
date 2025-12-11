@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/logc"

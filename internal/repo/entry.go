@@ -2,8 +2,8 @@ package repo
 
 import (
 	"gorm.io/gorm"
-	"watchAlert/internal/global"
-	"watchAlert/pkg/client"
+	"alertHub/internal/global"
+	"alertHub/pkg/client"
 )
 
 type (

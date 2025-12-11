@@ -3,8 +3,8 @@ package ctx
 import (
 	"context"
 	"sync"
-	"watchAlert/internal/cache"
-	"watchAlert/internal/repo"
+	"alertHub/internal/cache"
+	"alertHub/internal/repo"
 )
 
 type Context struct {

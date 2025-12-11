@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 const (

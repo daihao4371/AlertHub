@@ -8,7 +8,7 @@ import (
 	util "github.com/alibabacloud-go/tea-utils/v2/service"
 	"github.com/alibabacloud-go/tea/tea"
 	"github.com/zeromicro/go-zero/core/logc"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 type AliCloudSlsDsProvider struct {

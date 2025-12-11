@@ -5,8 +5,8 @@ import (
 	"encoding/hex"
 	v1 "k8s.io/api/core/v1"
 	"strings"
-	"watchAlert/internal/ctx"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/pkg/tools"
 )
 
 type KubernetesEvent struct {

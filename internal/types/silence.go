@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestSilenceCreate 请求创建静默规则
 type RequestSilenceCreate struct {

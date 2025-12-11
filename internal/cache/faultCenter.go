@@ -6,8 +6,8 @@ import (
 	"github.com/zeromicro/go-zero/core/logc"
 	"golang.org/x/net/context"
 	"sync"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 type (

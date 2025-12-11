@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strconv"
 	"time"
-	"watchAlert/internal/models"
-	utilsHttp "watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	utilsHttp "alertHub/pkg/tools"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

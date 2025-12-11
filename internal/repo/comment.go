@@ -3,9 +3,9 @@ package repo
 import (
 	"gorm.io/gorm"
 	"time"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 )
 
 type (

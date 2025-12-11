@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"text/template"
 	"time"
-	"watchAlert/internal/global"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/global"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

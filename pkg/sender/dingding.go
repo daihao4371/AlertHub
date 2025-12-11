@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"

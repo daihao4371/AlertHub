@@ -1,10 +1,10 @@
 package api
 
 import (
-	middleware "watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	jwtUtils "watchAlert/pkg/tools"
+	middleware "alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	jwtUtils "alertHub/pkg/tools"
 
 	"github.com/gin-gonic/gin"
 )

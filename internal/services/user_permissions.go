@@ -1,7 +1,7 @@
 package services
 
 import (
-	"watchAlert/internal/ctx"
+	"alertHub/internal/ctx"
 )
 
 type (

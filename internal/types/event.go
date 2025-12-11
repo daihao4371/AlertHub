@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestProcessAlertEvent 请求处理告警事件
 type RequestProcessAlertEvent struct {

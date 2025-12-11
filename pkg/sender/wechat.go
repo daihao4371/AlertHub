@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type (

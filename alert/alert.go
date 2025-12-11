@@ -2,13 +2,13 @@ package alert
 
 import (
 	"context"
-	"watchAlert/alert/consumer"
-	"watchAlert/alert/eval"
-	"watchAlert/alert/probing"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/global"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/tools"
+	"alertHub/alert/consumer"
+	"alertHub/alert/eval"
+	"alertHub/alert/probing"
+	"alertHub/internal/ctx"
+	"alertHub/internal/global"
+	"alertHub/pkg/client"
+	"alertHub/pkg/tools"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
