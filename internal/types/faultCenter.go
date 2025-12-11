@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 // RequestFaultCenterCreate 请求创建故障中心
 type RequestFaultCenterCreate struct {

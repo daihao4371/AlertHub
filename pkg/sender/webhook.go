@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type (

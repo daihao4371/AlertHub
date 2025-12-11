@@ -2,9 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
 )
 
 type aiController struct{}

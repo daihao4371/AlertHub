@@ -1,8 +1,8 @@
 package services
 
 import (
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/types"
+	"alertHub/internal/ctx"
+	"alertHub/internal/types"
 )
 
 type auditLogService struct {

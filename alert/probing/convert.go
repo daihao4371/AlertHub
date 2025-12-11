@@ -1,7 +1,7 @@
 package probing
 
 import (
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 // ConvertProbingEventToAlertEvent 将拨测事件转换为告警事件

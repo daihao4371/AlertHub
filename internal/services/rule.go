@@ -3,12 +3,12 @@ package services
 import (
 	"fmt"
 	"time"
-	"watchAlert/alert"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/tools"
+	"alertHub/alert"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/client"
+	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"

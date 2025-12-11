@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"github.com/bytedance/sonic"
 	"github.com/olivere/elastic/v7"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 type ElasticSearchDsProvider struct {

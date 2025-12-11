@@ -1,10 +1,10 @@
 package api
 
 import (
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/response"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	"alertHub/pkg/response"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"

@@ -1,4 +1,4 @@
-module watchAlert
+module alertHub
 
 go 1.23.0
 

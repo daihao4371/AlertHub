@@ -56,7 +56,7 @@ jobs:
         run: |
           REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
           NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
-          REPO="watchalert"
+          REPO="alerthub"
           TAG_NAME="${{ steps.tag.outputs.tag_name }}"
           
           IMAGE_LATEST="${REGISTRY}/${NAMESPACE}/${REPO}:latest"

@@ -3,9 +3,9 @@ package process
 import (
 	"fmt"
 	"time"
-	"watchAlert/alert/mute"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/alert/mute"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

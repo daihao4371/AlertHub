@@ -1,12 +1,12 @@
 package services
 
 import (
+	"alertHub/internal/ctx"
+	"alertHub/internal/global"
+	"alertHub/internal/models"
+	"alertHub/pkg/ai"
+	"alertHub/pkg/templates"
 	"context"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/global"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/ai"
-	"watchAlert/pkg/templates"
 )
 
 type (

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/sirupsen/logrus"
 	"testing"
-	"watchAlert/pkg/provider"
+	"alertHub/pkg/provider"
 )
 
 func TestKubernetesClient(t *testing.T) {

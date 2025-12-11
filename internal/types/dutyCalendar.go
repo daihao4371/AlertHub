@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 type RequestDutyCalendarCreate struct {
 	TenantId   string              `json:"tenantId"`

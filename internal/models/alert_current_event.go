@@ -3,7 +3,7 @@ package models
 import (
 	"fmt"
 	"time"
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 // AlertStatus 定义状态类型

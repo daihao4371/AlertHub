@@ -2,11 +2,11 @@ package api
 
 import (
 	"fmt"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/response"
-	"watchAlert/pkg/templates"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
+	"alertHub/pkg/response"
+	"alertHub/pkg/templates"
 
 	"github.com/gin-gonic/gin"
 )

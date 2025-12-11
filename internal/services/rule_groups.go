@@ -1,10 +1,10 @@
 package services
 
 import (
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 )
 
 type ruleGroupService struct {

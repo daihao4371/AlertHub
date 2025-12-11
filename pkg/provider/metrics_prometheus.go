@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"strings"
 	"time"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 
 	"github.com/prometheus/client_golang/api"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"

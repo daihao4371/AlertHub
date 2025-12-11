@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "watchalert.componentName" (dict "root" . "component" "init-job") }}
+  name: {{ include "alerthub.componentName" (dict "root" . "component" "init-job") }}
   namespace: {{ .Release.Namespace }}
 spec:
   template:
@@ -12,10 +12,10 @@ spec:
           command:
             - sh
             - -c
-            - until nc -z -v -w 30 {{ include "watchalert.componentName" (dict "root" . "component" "service") }} 9001; do echo "Waiting for service..."; sleep 3; done;
+            - until nc -z -v -w 30 {{ include "alerthub.componentName" (dict "root" . "component" "service") }} 9001; do echo "Waiting for service..."; sleep 3; done;
 
       containers:
-        - name: {{ include "watchalert.componentName" (dict "root" . "component" "init-job") }}
+        - name: {{ include "alerthub.componentName" (dict "root" . "component" "init-job") }}
           image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           env:
@@ -35,5 +35,5 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "watchalert.componentName" (dict "root" . "component" "init-config") }}
+            name: {{ include "alerthub.componentName" (dict "root" . "component" "init-config") }}
       restartPolicy: OnFailure

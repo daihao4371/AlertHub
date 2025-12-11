@@ -1,8 +1,8 @@
 version: "3"
 services:
-  w8t-service:
-    container_name: w8t-service
-    image: docker.io/cairry/watchalert:latest
+  alerthub-service:
+    container_name: alerthub-service
+    image: docker.io/cairry/alerthub:latest
     environment:
       - TZ=Asia/Shanghai
     volumes:
@@ -17,14 +17,14 @@ services:
       timeout: 2s
       retries: 10
     depends_on:
-      - w8t-mysql
-      - w8t-redis
+      - alerthub-mysql
+      - alerthub-redis
     networks:
-      - w8t
+      - alerthub
 
-  w8t-web:
-    container_name: w8t-web
-    image: docker.io/cairry/watchalert-web:latest
+  alerthub-web:
+    container_name: alerthub-web
+    image: docker.io/cairry/alerthub-web:latest
     environment:
       - TZ=Asia/Shanghai
     restart: always
@@ -32,10 +32,10 @@ services:
     ports:
       - "80:80"
     networks:
-      - w8t
+      - alerthub
 
-  w8t-redis:
-    container_name: w8t-redis
+  alerthub-redis:
+    container_name: alerthub-redis
     image: redis:latest
     ports:
       - "6379:6379"
@@ -47,11 +47,11 @@ services:
       - TZ=Asia/Shanghai
     restart: always
     networks:
-      - w8t
+      - alerthub
 
 
-  w8t-mysql:
-    container_name: w8t-mysql
+  alerthub-mysql:
+    container_name: alerthub-mysql
     image: mysql:8.0
     ports:
       - "3306:3306"
@@ -60,10 +60,10 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - MYSQL_ROOT_PASSWORD=w8t.123
-      - MYSQL_DATABASE=watchalert
+      - MYSQL_DATABASE=alerthub
     restart: always
     networks:
-      - w8t
+      - alerthub
 
   #必须在服务启动创建表后再导入数据
   init-mysql:
@@ -73,18 +73,18 @@ services:
       -  ../helmchart/files/sql:/sql
     environment:
       - TZ=Asia/Shanghai
-      - MYSQL_HOST=w8t-mysql
+      - MYSQL_HOST=alerthub-mysql
       - MYSQL_USERNAME=root
       - MYSQL_PASSWORD=w8t.123
-      - MYSQL_DATABASE=watchalert
+      - MYSQL_DATABASE=alerthub
     restart: on-failure
     command: ["sh", "-c", "chmod +x /sql/auto_import.sh; /sql/auto_import.sh"]
     depends_on:
-      - w8t-mysql
-      - w8t-service
+      - alerthub-mysql
+      - alerthub-service
     networks:
-      - w8t
+      - alerthub
 
 networks:
-  w8t:
+  alerthub:
     driver: bridge

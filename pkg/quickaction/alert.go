@@ -3,8 +3,8 @@ package quickaction
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 )
 
 // FindProbingAlertByFingerprint 从拨测告警缓存中查找指定指纹的告警

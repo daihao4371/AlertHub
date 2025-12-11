@@ -2,10 +2,10 @@ package services
 
 import (
 	"time"
-	"watchAlert/internal/ctx"
-	models "watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	models "alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 )
 
 type userRoleService struct {

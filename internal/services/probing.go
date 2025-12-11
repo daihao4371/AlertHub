@@ -3,14 +3,14 @@ package services
 import (
 	"fmt"
 	"time"
-	"watchAlert/alert"
-	"watchAlert/alert/probing"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/client"
-	"watchAlert/pkg/provider"
-	"watchAlert/pkg/tools"
+	"alertHub/alert"
+	"alertHub/alert/probing"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/client"
+	"alertHub/pkg/provider"
+	"alertHub/pkg/tools"
 )
 
 type (

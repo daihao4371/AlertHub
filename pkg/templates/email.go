@@ -1,6 +1,6 @@
 package templates
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 func emailTemplate(alert models.AlertCurEvent, noticeTmpl models.NoticeTemplateExample) string {
 	return ParserTemplate("Event", alert, noticeTmpl.Template)

@@ -6,8 +6,8 @@ import (
 	"strings"
 	"sync"
 	"time"
-	ctx2 "watchAlert/internal/ctx"
-	"watchAlert/internal/models"
+	ctx2 "alertHub/internal/ctx"
+	"alertHub/internal/models"
 
 	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/logc"

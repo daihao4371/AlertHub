@@ -2,9 +2,9 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/pkg/community/aws/cloudwatch/types"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/pkg/community/aws/cloudwatch/types"
 )
 
 type awsCloudWatchController struct{}

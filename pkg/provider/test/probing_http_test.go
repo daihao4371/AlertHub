@@ -3,9 +3,9 @@ package test
 import (
 	"fmt"
 	"testing"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/provider"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/provider"
+	"alertHub/pkg/tools"
 )
 
 func TestHTTPer(t *testing.T) {

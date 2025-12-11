@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"testing"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/provider"
+	"alertHub/internal/models"
+	"alertHub/pkg/provider"
 )
 
 func TestNewClickHouseClient(t *testing.T) {

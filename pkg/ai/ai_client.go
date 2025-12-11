@@ -10,9 +10,9 @@ import (
 	"log"
 	"net/http"
 	"strings"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 // NewAiClient 工厂方法

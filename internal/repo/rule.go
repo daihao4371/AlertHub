@@ -2,7 +2,7 @@ package repo
 
 import (
 	"gorm.io/gorm"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 type (

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"github.com/zeromicro/go-zero/core/logc"
 	"strings"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/sender"
-	"watchAlert/pkg/templates"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/sender"
+	"alertHub/pkg/templates"
+	"alertHub/pkg/tools"
 )
 
 type toUser struct {

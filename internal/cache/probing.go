@@ -5,8 +5,8 @@ import (
 	"github.com/go-redis/redis"
 	"sync"
 	"time"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/models"
+	"alertHub/pkg/tools"
 )
 
 type (

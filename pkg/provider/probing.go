@@ -1,7 +1,7 @@
 package provider
 
 import (
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 const (

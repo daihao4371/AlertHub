@@ -3,8 +3,8 @@ package repo
 import (
 	"strconv"
 	"time"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
 
 	"gorm.io/gorm"
 )

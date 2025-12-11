@@ -2,7 +2,7 @@ package provider
 
 import (
 	"fmt"
-	"watchAlert/internal/models"
+	"alertHub/internal/models"
 )
 
 const (

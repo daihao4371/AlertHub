@@ -4,9 +4,9 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/response"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/response"
 )
 
 const TenantIDHeaderKey = "TenantID"

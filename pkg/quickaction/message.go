@@ -3,10 +3,10 @@ package quickaction
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/sender"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/sender"
+	"alertHub/pkg/tools"
 )
 
 // BuildDingTalkConfirmationMessage 构建钉钉确认消息（Markdown格式）

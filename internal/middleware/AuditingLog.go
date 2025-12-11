@@ -8,10 +8,10 @@ import (
 	"io/ioutil"
 	"strings"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/response"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/response"
+	"alertHub/pkg/tools"
 )
 
 func AuditingLog() gin.HandlerFunc {

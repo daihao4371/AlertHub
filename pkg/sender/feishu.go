@@ -9,12 +9,12 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"watchAlert/internal/ctx"
+	"alertHub/internal/ctx"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"
 
-	"watchAlert/pkg/tools"
+	"alertHub/pkg/tools"
 )
 
 type (

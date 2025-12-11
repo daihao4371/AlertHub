@@ -1,9 +1,9 @@
 package api
 
 import (
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
 
 	"github.com/gin-gonic/gin"
 )

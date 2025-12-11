@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/sender"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/sender"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"

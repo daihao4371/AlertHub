@@ -3,11 +3,11 @@ package services
 import (
 	"fmt"
 	"time"
-	"watchAlert/internal/ctx"
-	models "watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/quickaction"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	models "alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/quickaction"
+	"alertHub/pkg/tools"
 )
 
 type alertSilenceService struct {

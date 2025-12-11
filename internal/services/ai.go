@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"gorm.io/gorm"
 	"strings"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/ai"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/internal/types"
+	"alertHub/pkg/ai"
 )
 
 type (

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"net/url"
-	"watchAlert/internal/types"
-	"watchAlert/pkg/tools"
+	"alertHub/internal/types"
+	"alertHub/pkg/tools"
 )
 
 func GetOpenIDConfiguration(upper string) (*types.RespOpenIDConfiguration, error) {

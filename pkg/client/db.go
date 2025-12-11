@@ -3,8 +3,8 @@ package client
 import (
 	"context"
 	"fmt"
-	"watchAlert/internal/global"
-	"watchAlert/internal/models"
+	"alertHub/internal/global"
+	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/driver/mysql"
@@ -25,7 +25,7 @@ func NewDBClient(config DBConfig) *gorm.DB {
 	// 初始化本地 test.db 数据库文件
 	//db, err := gorm.Open(sqlite.Open("data/sql.db"), &gorm.Config{})
 
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4_general_ci,utf8&parseTime=True&loc=Local&timeout=%s",
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&collation=utf8mb4_general_ci&parseTime=True&loc=Local&timeout=%s",
 		config.User,
 		config.Pass,
 		config.Host,

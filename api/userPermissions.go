@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/middleware"
-	"watchAlert/internal/services"
+	"alertHub/internal/middleware"
+	"alertHub/internal/services"
 )
 
 type userPermissionsController struct{}

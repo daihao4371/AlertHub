@@ -2,8 +2,8 @@ package api
 
 import (
 	"github.com/gin-gonic/gin"
-	"watchAlert/internal/services"
-	"watchAlert/internal/types"
+	"alertHub/internal/services"
+	"alertHub/internal/types"
 )
 
 type systemController struct{}

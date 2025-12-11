@@ -1,6 +1,6 @@
 package types
 
-import "watchAlert/internal/models"
+import "alertHub/internal/models"
 
 type RequestRuleTemplateGroupCreate struct {
 	Name        string `json:"name"`

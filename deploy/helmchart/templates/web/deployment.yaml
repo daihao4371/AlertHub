@@ -2,20 +2,20 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: {{ include "watchalert.componentName" (dict "root" . "component" "web") }}
-    {{- include "watchalert.labels" . | nindent 4 }}
-  name: {{ include "watchalert.componentName" (dict "root" . "component" "web") }}
+    app: {{ include "alerthub.componentName" (dict "root" . "component" "web") }}
+    {{- include "alerthub.labels" . | nindent 4 }}
+  name: {{ include "alerthub.componentName" (dict "root" . "component" "web") }}
   namespace: {{ .Release.Namespace }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "watchalert.componentName" (dict "root" . "component" "web") }}
+      app: {{ include "alerthub.componentName" (dict "root" . "component" "web") }}
   template:
     metadata:
       labels:
-        app: {{ include "watchalert.componentName" (dict "root" . "component" "web") }}
-        {{- include "watchalert.selectorLabels" . | nindent 8 }}
+        app: {{ include "alerthub.componentName" (dict "root" . "component" "web") }}
+        {{- include "alerthub.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -32,10 +32,10 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
 
-      serviceAccountName: {{ include "watchalert.serviceAccountName" . }}
+      serviceAccountName: {{ include "alerthub.serviceAccountName" . }}
 
       containers:
-        - name: {{ include "watchalert.componentName" (dict "root" . "component" "web") }}
+        - name: {{ include "alerthub.componentName" (dict "root" . "component" "web") }}
           image: "{{ .Values.web.image.repository }}:{{ .Values.web.image.tag }}"
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           command:
@@ -70,4 +70,4 @@ spec:
       volumes:
         - name: nginx
           configMap:
-            name: {{ include "watchalert.componentName" (dict "root" . "component" "web-config") }}
+            name: {{ include "alerthub.componentName" (dict "root" . "component" "web-config") }}

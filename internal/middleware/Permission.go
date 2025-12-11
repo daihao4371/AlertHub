@@ -2,10 +2,10 @@ package middleware
 
 import (
 	"fmt"
-	"watchAlert/internal/ctx"
-	"watchAlert/internal/models"
-	"watchAlert/pkg/response"
-	utils2 "watchAlert/pkg/tools"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
+	"alertHub/pkg/response"
+	utils2 "alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 	"github.com/gin-gonic/gin"
