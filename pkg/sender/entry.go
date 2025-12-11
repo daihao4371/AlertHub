@@ -45,7 +45,7 @@ type (
 	}
 )
 
-const RobotTestContent = "这是一条来自 WatchAlert 的测试消息"
+const RobotTestContent = "这是一条来自 AlertHub 的测试消息"
 
 // Sender 发送通知的主函数
 func Sender(ctx *ctx.Context, sendParams SendParams) error {
