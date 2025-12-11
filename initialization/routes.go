@@ -2,12 +2,13 @@ package initialization
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
-	"github.com/zeromicro/go-zero/core/logc"
 	"watchAlert/internal/global"
 	"watchAlert/internal/middleware"
 	"watchAlert/internal/routers"
-	"watchAlert/internal/routers/v1"
+	v1 "watchAlert/internal/routers/v1"
+
+	"github.com/gin-gonic/gin"
+	"github.com/zeromicro/go-zero/core/logc"
 )
 
 func InitRoute() {

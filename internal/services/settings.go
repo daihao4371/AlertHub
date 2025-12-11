@@ -6,6 +6,7 @@ import (
 	"watchAlert/internal/global"
 	"watchAlert/internal/models"
 	"watchAlert/pkg/ai"
+	"watchAlert/pkg/templates"
 )
 
 type (
@@ -68,6 +69,9 @@ func (a settingService) Save(req interface{}) (interface{}, interface{}) {
 		}
 		a.ctx.Redis.ProviderPools().SetClient("AiClient", client)
 	}
+
+	// 重新加载快捷操作配置到内存缓存（保存后立即生效）
+	templates.SetQuickActionConfig(r.QuickActionConfig)
 
 	return nil, nil
 }

@@ -8,6 +8,7 @@ type RequestNoticeTemplateCreate struct {
 	TemplateFiring       string `json:"templateFiring"`
 	TemplateRecover      string `json:"templateRecover"`
 	EnableFeiShuJsonCard *bool  `json:"enableFeiShuJsonCard"`
+	EnableQuickAction    *bool  `json:"enableQuickAction"` // 是否启用快捷操作按钮
 	UpdateBy             string `json:"updateBy"`
 }
 
@@ -20,6 +21,7 @@ type RequestNoticeTemplateUpdate struct {
 	TemplateFiring       string `json:"templateFiring"`
 	TemplateRecover      string `json:"templateRecover"`
 	EnableFeiShuJsonCard *bool  `json:"enableFeiShuJsonCard"`
+	EnableQuickAction    *bool  `json:"enableQuickAction"` // 是否启用快捷操作按钮
 	UpdateBy             string `json:"updateBy"`
 }
 

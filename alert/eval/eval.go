@@ -318,7 +318,14 @@ func (t *AlertRule) Recover(tenantId, ruleId string, eventCacheKey models.AlertE
 		// 获取待恢复状态的时间戳
 		wTime, err := t.ctx.Redis.PendingRecover().Get(tenantId, ruleId, fingerprint)
 		if err == redis.Nil {
-			// 转换状态, 标记为待恢复
+			// 检查当前状态：只有告警中或预告警状态的事件才能转换到待恢复状态
+			// 已恢复状态的事件不应该再进入待恢复流程（根据状态转换规则，StateRecovered 只允许转换到 StatePreAlert）
+			if newEvent.Status == models.StateRecovered {
+				// 已恢复状态的事件从活动列表中消失，说明已经完成恢复流程，跳过处理
+				logc.Debugf(t.ctx.Ctx, "Skipping transition to pending_recovery for fingerprint %s: event already in recovered state", fingerprint)
+				continue
+			}
+			// 转换状态, 标记为待恢复（仅适用于 StateAlerting 或 StatePreAlert 状态）
 			if err := newEvent.TransitionStatus(models.StatePendingRecovery); err != nil {
 				logc.Errorf(t.ctx.Ctx, "Failed to transition to「pending_recovery」state for fingerprint %s: %v", fingerprint, err)
 				continue

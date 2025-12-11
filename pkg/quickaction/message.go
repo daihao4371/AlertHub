@@ -204,18 +204,31 @@ func SendConfirmationMessage(
 		return fmt.Errorf("无法发送确认消息: %w", err)
 	}
 
-	// 2. 根据通知类型构建不同的消息内容
+	// 2. 查询用户真实姓名（如果查询失败，则使用用户名）
+	displayName := username
+	if username != "" {
+		var member models.Member
+		if err := ctx.DB.DB().Model(&models.Member{}).Where("user_name = ?", username).First(&member).Error; err == nil {
+			// 如果查询到真实姓名且不为空，则使用真实姓名；否则使用用户名
+			if member.RealName != "" {
+				displayName = member.RealName
+			}
+		}
+		// 如果查询失败，继续使用用户名（displayName 已经是 username）
+	}
+
+	// 3. 根据通知类型构建不同的消息内容
 	var message string
 	switch noticeType {
 	case "feishu":
-		message = BuildFeishuConfirmationMessage(alert, actionType, username, duration...)
+		message = BuildFeishuConfirmationMessage(alert, actionType, displayName, duration...)
 	case "dingtalk":
-		message = BuildDingTalkConfirmationMessage(alert, actionType, username, duration...)
+		message = BuildDingTalkConfirmationMessage(alert, actionType, displayName, duration...)
 	default:
 		return fmt.Errorf("不支持的通知类型: %s", noticeType)
 	}
 
-	// 3. 发送消息
+	// 4. 发送消息
 	return SendMessage(hook, sign, noticeType, message)
 }
 

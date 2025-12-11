@@ -144,7 +144,13 @@ func (tr TenantRepo) List(userId string) (data []models.Tenant, err error) {
 	var ts = &[]models.Tenant{}
 	for _, tid := range getUser.Tenants {
 		getT, err := tr.Tenant().Get(tid)
+		// 如果租户不存在（可能已被删除），跳过该租户，继续处理其他租户
 		if err != nil {
+			if err == gorm.ErrRecordNotFound {
+				logc.Infof(context.Background(), "租户 %s 不存在，已跳过", tid)
+				continue
+			}
+			// 其他错误直接返回
 			return nil, err
 		}
 		*ts = append(*ts, getT)

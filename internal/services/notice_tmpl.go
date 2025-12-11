@@ -1,7 +1,6 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"time"
 	"watchAlert/internal/ctx"
@@ -48,6 +47,7 @@ func (nts noticeTmplService) Create(req interface{}) (interface{}, interface{}) 
 		TemplateFiring:       r.TemplateFiring,
 		TemplateRecover:      r.TemplateRecover,
 		EnableFeiShuJsonCard: r.EnableFeiShuJsonCard,
+		EnableQuickAction:    r.EnableQuickAction,
 		UpdateAt:             time.Now().Unix(),
 		UpdateBy:             r.UpdateBy,
 	})
@@ -69,6 +69,7 @@ func (nts noticeTmplService) Update(req interface{}) (interface{}, interface{}) 
 		TemplateFiring:       r.TemplateFiring,
 		TemplateRecover:      r.TemplateRecover,
 		EnableFeiShuJsonCard: r.EnableFeiShuJsonCard,
+		EnableQuickAction:    r.EnableQuickAction,
 		UpdateAt:             time.Now().Unix(),
 		UpdateBy:             r.UpdateBy,
 	})
@@ -91,7 +92,7 @@ func (nts noticeTmplService) Delete(req interface{}) (interface{}, interface{}) 
 		for _, n := range nl {
 			ids = append(ids, n.Uuid)
 		}
-		return nil, errors.New(fmt.Sprintf("删除失败, 已有通知对象绑定: %s", ids))
+		return nil, fmt.Errorf("删除失败, 已有通知对象绑定: %s", ids)
 	}
 
 	err = nts.ctx.DB.NoticeTmpl().Delete(r.ID)

@@ -1,7 +1,7 @@
 package models
 
 type Tenant struct {
-	ID               string `json:"id"`
+	ID               string `json:"id" gorm:"primaryKey;type:varchar(64)"`
 	Name             string `json:"name"`
 	Manager          string `json:"manager"`
 	ManagerRealName  string `json:"managerRealName" gorm:"-"` // Not persisted, for display only

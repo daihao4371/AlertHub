@@ -15,6 +15,7 @@ func feishuTemplate(alert models.AlertCurEvent, noticeTmpl models.NoticeTemplate
 
 	var cardContentString string
 	if *noticeTmpl.EnableFeiShuJsonCard {
+		// 使用自定义JSON卡片模板
 		defaultTemplate := models.FeiShuJsonCardMsg{
 			MsgType: "interactive",
 		}
@@ -28,6 +29,21 @@ func feishuTemplate(alert models.AlertCurEvent, noticeTmpl models.NoticeTemplate
 		cardContentString = ParserTemplate("Card", alert, cardContentString)
 		_ = sonic.Unmarshal([]byte(cardContentString), &tmplC)
 		defaultTemplate.Card = tmplC
+
+		// 为自定义JSON卡片也添加快捷操作按钮（如果启用）
+		// 检查模板级别的快捷操作开关（如果未设置，默认启用以保持向后兼容）
+		enableQuickAction := noticeTmpl.EnableQuickAction == nil || *noticeTmpl.EnableQuickAction
+		if enableQuickAction {
+			actionButtonsMap := buildFeishuActionButtonsMap(alert)
+			if actionButtonsMap != nil {
+				// 确保Elements字段已初始化
+				if defaultTemplate.Card.Elements == nil {
+					defaultTemplate.Card.Elements = []map[string]interface{}{}
+				}
+				defaultTemplate.Card.Elements = append(defaultTemplate.Card.Elements, actionButtonsMap)
+			}
+		}
+
 		cardContentString = tools.JsonMarshalToString(defaultTemplate)
 
 	} else {
@@ -88,9 +104,13 @@ func feishuTemplate(alert models.AlertCurEvent, noticeTmpl models.NoticeTemplate
 		defaultTemplate.Card.Elements = tools.ConvertSliceToMapList(cardElements)
 
 		// 添加快捷操作按钮（如果启用）
-		actionButtonsMap := buildFeishuActionButtonsMap(alert)
-		if actionButtonsMap != nil {
-			defaultTemplate.Card.Elements = append(defaultTemplate.Card.Elements, actionButtonsMap)
+		// 检查模板级别的快捷操作开关（如果未设置，默认启用以保持向后兼容）
+		enableQuickAction := noticeTmpl.EnableQuickAction == nil || *noticeTmpl.EnableQuickAction
+		if enableQuickAction {
+			actionButtonsMap := buildFeishuActionButtonsMap(alert)
+			if actionButtonsMap != nil {
+				defaultTemplate.Card.Elements = append(defaultTemplate.Card.Elements, actionButtonsMap)
+			}
 		}
 
 		defaultTemplate.Card.Header = tools.ConvertStructToMap(cardHeader)

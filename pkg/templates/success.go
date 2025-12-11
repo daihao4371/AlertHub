@@ -81,6 +81,23 @@ func RenderSuccessPage(actionName string) string {
             color: #999;
             font-size: 12px;
         }
+        .message-status {
+            background: linear-gradient(135deg, #e6f7ff 0%%, #f0f9ff 100%%);
+            border-left: 4px solid #1890ff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: left;
+        }
+        .message-status .status-icon {
+            font-size: 18px;
+            margin-right: 8px;
+        }
+        .message-status .status-text {
+            color: #1890ff;
+            font-size: 13px;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +105,10 @@ func RenderSuccessPage(actionName string) string {
         <div class="icon">✅</div>
         <h1>%s成功</h1>
         <p>操作已成功完成</p>
+        <div class="message-status">
+            <span class="status-icon">📨</span>
+            <span class="status-text">确认消息已发送到群聊</span>
+        </div>
         <div class="divider"></div>
         <p class="tip">您可以关闭此页面</p>
     </div>
