@@ -717,7 +717,7 @@ func (p *ContentParser) buildFooter() []map[string]interface{} {
 			"elements": []map[string]interface{}{
 				{
 					"tag":     "lark_md",
-					"content": fmt.Sprintf("⏰ **报告时间**: %s\n\n*本报告由 sAlertHub Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
+					"content": fmt.Sprintf("⏰ **报告时间**: %s\n\n*本报告由 AlertHub Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
 				},
 			},
 		},
