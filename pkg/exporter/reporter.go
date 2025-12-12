@@ -1,9 +1,9 @@
 package exporter
 
 import (
+	"alertHub/internal/models"
 	"fmt"
 	"time"
-	"alertHub/internal/models"
 )
 
 // Reporter 报告生成器 - 负责生成 Exporter 健康巡检报告
@@ -206,7 +206,7 @@ func (r *Reporter) GenerateReportContent(
 	}
 
 	content += "---\n\n"
-	content += "*本报告由 WatchAlert Exporter 健康巡检系统自动生成*\n"
+	content += "*本报告由 AlertHub Exporter 健康巡检系统自动生成*\n"
 
 	return content
 }
