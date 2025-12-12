@@ -1,14 +1,13 @@
 package exporter
 
 import (
-	"fmt"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/provider"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/zeromicro/go-zero/core/logc"
 )
 
 // Inspector 巡检器 - 负责执行 Exporter 健康巡检
@@ -48,7 +47,6 @@ func (ins *Inspector) InspectAll(forceInspect bool) error {
 		// 1. 如果强制执行,直接巡检
 		if forceInspect {
 			shouldInspect = true
-			logc.Infof(ins.ctx.Ctx, "强制巡检: tenantId=%s", tenantId)
 		} else {
 			// 2. 检查是否有历史巡检记录 (任意数据源有记录就不是首次)
 			for _, dsId := range config.DatasourceIds {
@@ -63,7 +61,6 @@ func (ins *Inspector) InspectAll(forceInspect bool) error {
 			// 3. 如果是首次巡检,立即执行
 			if isFirstInspection {
 				shouldInspect = true
-				logc.Infof(ins.ctx.Ctx, "检测到首次巡检: tenantId=%s, 立即执行初始化巡检", tenantId)
 			} else {
 				// 4. 否则检查当前时间是否在配置的巡检时间点中
 				for _, inspectionTime := range config.InspectionTimes {
@@ -80,15 +77,10 @@ func (ins *Inspector) InspectAll(forceInspect bool) error {
 			continue
 		}
 
-		if !isFirstInspection {
-			logc.Infof(ins.ctx.Ctx, "开始执行巡检: tenantId=%s, 当前时间=%s", tenantId, currentTime)
-		}
-
 		// 遍历配置的数据源
 		for _, dsId := range config.DatasourceIds {
 			err := ins.InspectDatasource(dsId)
 			if err != nil {
-				logc.Errorf(ins.ctx.Ctx, "巡检数据源失败: datasourceId=%s, err=%v", dsId, err)
 				continue
 			}
 		}
@@ -96,14 +88,10 @@ func (ins *Inspector) InspectAll(forceInspect bool) error {
 		// 清理过期数据
 		err = ins.ctx.DB.ExporterMonitor().DeleteExpiredInspections(tenantId, config.HistoryRetention)
 		if err != nil {
-			logc.Errorf(ins.ctx.Ctx, "清理过期巡检数据失败: tenantId=%s, err=%v", tenantId, err)
+			// 忽略清理错误
 		}
 
 		executedCount++
-	}
-
-	if executedCount > 0 {
-		logc.Infof(ins.ctx.Ctx, "巡检完成: 执行了 %d 个租户的巡检任务", executedCount)
 	}
 
 	return nil
@@ -114,25 +102,25 @@ func (ins *Inspector) InspectDatasource(datasourceId string) error {
 	// 1. 获取数据源信息
 	datasource, err := ins.ctx.DB.Datasource().Get(datasourceId)
 	if err != nil {
-		return fmt.Errorf("获取数据源失败: %w", err)
+		return fmt.Errorf("failed to get datasource %s: %w", datasourceId, err)
 	}
 
 	// 2. 从 ProviderPools 获取 Provider
 	providerInterface, err := ins.ctx.Redis.ProviderPools().GetClient(datasourceId)
 	if err != nil {
-		return fmt.Errorf("获取数据源 Provider 失败: %w", err)
+		return fmt.Errorf("failed to get provider for datasource %s: %w", datasourceId, err)
 	}
 
 	// 3. 类型断言为 PrometheusProvider
 	prometheusProvider, ok := providerInterface.(provider.PrometheusProvider)
 	if !ok {
-		return fmt.Errorf("数据源类型不是 Prometheus")
+		return fmt.Errorf("datasource %s is not prometheus type, actual type: %T", datasourceId, providerInterface)
 	}
 
 	// 4. 获取所有 Targets
 	targets, err := prometheusProvider.GetTargets()
 	if err != nil {
-		return fmt.Errorf("获取 Targets 失败: %w", err)
+		return fmt.Errorf("failed to get targets from datasource %s: %w", datasourceId, err)
 	}
 
 	// 5. 生成巡检批次ID
@@ -220,17 +208,14 @@ func (ins *Inspector) InspectDatasource(datasourceId string) error {
 
 	err = ins.ctx.DB.ExporterMonitor().CreateInspection(inspection)
 	if err != nil {
-		return fmt.Errorf("创建巡检主记录失败: %w", err)
+		return fmt.Errorf("failed to create inspection record for datasource %s: %w", datasourceId, err)
 	}
 
 	// 9. 批量插入明细记录
 	err = ins.ctx.DB.ExporterMonitor().CreateInspectionDetails(details)
 	if err != nil {
-		return fmt.Errorf("创建巡检明细失败: %w", err)
+		return fmt.Errorf("failed to create inspection details for datasource %s: %w", datasourceId, err)
 	}
-
-	logc.Infof(ins.ctx.Ctx, "巡检完成: datasource=%s, total=%d, up=%d, down=%d, unknown=%d",
-		datasource.Name, totalCount, upCount, downCount, unknownCount)
 
 	return nil
 }
@@ -255,7 +240,6 @@ func (ins *Inspector) getAllTenantIds() []string {
 		Scan(&tenantIds).Error
 
 	if err != nil {
-		logc.Errorf(ins.ctx.Ctx, "获取租户列表失败: %v", err)
 		return []string{}
 	}
 

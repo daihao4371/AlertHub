@@ -1,11 +1,11 @@
 package services
 
 import (
-	"fmt"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/exporter"
+	"fmt"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
@@ -68,13 +68,53 @@ func (s *exporterMonitorService) TriggerManualInspection(tenantId, datasourceId 
 
 	// 如果指定了数据源ID,只巡检该数据源
 	if datasourceId != "" {
-		logc.Infof(s.ctx.Ctx, "手动触发巡检: tenantId=%s, datasourceId=%s", tenantId, datasourceId)
-		return inspector.InspectDatasource(datasourceId)
+		// Check if datasource exists and belongs to tenant
+		datasource, err := s.ctx.DB.Datasource().Get(datasourceId)
+		if err != nil {
+			return fmt.Errorf("failed to get datasource %s: %w", datasourceId, err)
+		}
+
+		if datasource.TenantId != tenantId {
+			return fmt.Errorf("datasource %s does not belong to tenant %s", datasourceId, tenantId)
+		}
+
+		err = inspector.InspectDatasource(datasourceId)
+		if err != nil {
+			return fmt.Errorf("inspection failed for datasource %s: %w", datasourceId, err)
+		}
+
+		return nil
 	}
 
 	// 否则巡检所有已启用的数据源 (强制执行,忽略时间检查)
-	logc.Infof(s.ctx.Ctx, "手动触发全量巡检: tenantId=%s", tenantId)
-	return inspector.InspectAll(true)
+	// For manual inspection, query all available Prometheus datasources directly from database
+	// instead of relying on ExporterMonitorConfig
+	var availableDS []models.AlertDataSource
+	err := s.ctx.DB.DB().Where("tenant_id = ? AND type = ? AND enabled = ?", tenantId, "Prometheus", true).
+		Find(&availableDS).Error
+	if err != nil {
+		return fmt.Errorf("failed to query available datasources for tenant %s: %w", tenantId, err)
+	}
+	
+	if len(availableDS) == 0 {
+		return fmt.Errorf("no Prometheus datasources found for tenant %s", tenantId)
+	}
+	
+	// Manually inspect each datasource
+	successCount := 0
+	for _, ds := range availableDS {
+		err = inspector.InspectDatasource(ds.ID)
+		if err != nil {
+			continue // Continue with other datasources even if one fails
+		}
+		successCount++
+	}
+	
+	if successCount == 0 {
+		return fmt.Errorf("all datasource inspections failed for tenant %s", tenantId)
+	}
+	
+	return nil
 }
 
 // GetRealtimeStatus 获取实时 Exporter 状态 (从数据库读取最新巡检结果)

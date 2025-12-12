@@ -1,12 +1,12 @@
 package exporter
 
 import (
-	"fmt"
-	"strings"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/sender"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -168,6 +168,13 @@ type DingDingBuilder struct {
 // Build 构建钉钉消息
 func (b *DingDingBuilder) Build(content string) map[string]interface{} {
 	optimizedContent := b.optimizeContent(content)
+
+	// Add inspection keyword for health check reports to ensure DingDing robot acceptance
+	// This ensures the message contains required keywords without affecting other alert functionality
+	if strings.Contains(optimizedContent, "健康巡检报告") || strings.Contains(optimizedContent, "巡检时间") {
+		optimizedContent = "告警 " + optimizedContent
+	}
+
 	return map[string]interface{}{
 		"msgtype": "markdown",
 		"markdown": map[string]interface{}{
