@@ -1,12 +1,12 @@
 package exporter
 
 import (
-	"fmt"
-	"strings"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/sender"
+	"fmt"
+	"strings"
+	"time"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -168,6 +168,13 @@ type DingDingBuilder struct {
 // Build 构建钉钉消息
 func (b *DingDingBuilder) Build(content string) map[string]interface{} {
 	optimizedContent := b.optimizeContent(content)
+
+	// Add inspection keyword for health check reports to ensure DingDing robot acceptance
+	// This ensures the message contains required keywords without affecting other alert functionality
+	if strings.Contains(optimizedContent, "健康巡检报告") || strings.Contains(optimizedContent, "巡检时间") {
+		optimizedContent = "告警 " + optimizedContent
+	}
+
 	return map[string]interface{}{
 		"msgtype": "markdown",
 		"markdown": map[string]interface{}{
@@ -412,10 +419,10 @@ func (p *ContentParser) parseStatisticsRow(line string, stats *Statistics) {
 
 	// 使用查找表解析字段
 	fieldParsers := map[string]func(string){
-		"总数":  func(v string) { stats.TotalCount, _ = parseInteger(v) },
-		"正常":  func(v string) { stats.UpCount, _ = parseInteger(v) },
-		"异常":  func(v string) { stats.DownCount, _ = parseInteger(v) },
-		"未知":  func(v string) { stats.UnknownCount, _ = parseInteger(v) },
+		"总数":   func(v string) { stats.TotalCount, _ = parseInteger(v) },
+		"正常":   func(v string) { stats.UpCount, _ = parseInteger(v) },
+		"异常":   func(v string) { stats.DownCount, _ = parseInteger(v) },
+		"未知":   func(v string) { stats.UnknownCount, _ = parseInteger(v) },
 		"可用率": func(v string) { stats.AvailabilityRate, _ = parsePercentage(v) },
 	}
 
@@ -710,7 +717,7 @@ func (p *ContentParser) buildFooter() []map[string]interface{} {
 			"elements": []map[string]interface{}{
 				{
 					"tag":     "lark_md",
-					"content": fmt.Sprintf("⏰ **报告时间**: %s\n\n*本报告由 WatchAlert Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
+					"content": fmt.Sprintf("⏰ **报告时间**: %s\n\n*本报告由 AlertHub Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
 				},
 			},
 		},

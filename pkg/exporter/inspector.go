@@ -1,241 +1,268 @@
 package exporter
 
 import (
-	"fmt"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/provider"
+	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/zeromicro/go-zero/core/logc"
 )
 
-// Inspector 巡检器 - 负责执行 Exporter 健康巡检
+// TargetHealth represents the health status of a monitoring target
+type TargetHealth = provider.TargetHealth
+
+// Inspector handles Exporter health inspections
 type Inspector struct {
 	ctx *ctx.Context
 }
 
-// NewInspector 创建巡检器实例
+// NewInspector creates a new Inspector instance
 func NewInspector(c *ctx.Context) *Inspector {
 	return &Inspector{ctx: c}
 }
 
-// InspectAll 巡检所有已启用的 Prometheus 数据源
-// forceInspect: 是否强制执行巡检(忽略时间检查)
-// - false: 只在当前时间匹配租户配置的巡检时间时才执行
-// - true: 忽略时间检查,立即执行巡检(用于应用启动时刷新状态)
-// 特殊情况: 如果租户没有任何历史巡检记录,则立即执行一次初始化巡检
+// InspectAll performs health checks on all enabled Prometheus datasources
+// forceInspect: whether to force execution ignoring time checks
 func (ins *Inspector) InspectAll(forceInspect bool) error {
-	// 获取当前时间 (HH:MM 格式)
 	currentTime := time.Now().Format("15:04")
+	tenantIds := ins.getAllActiveTenantIds()
 
-	// 获取所有租户的配置
-	tenantIds := ins.getAllTenantIds()
-
-	executedCount := 0
 	for _, tenantId := range tenantIds {
-		// 获取配置
 		config, err := ins.ctx.DB.ExporterMonitor().GetConfig(tenantId)
 		if err != nil || !config.GetEnabled() {
 			continue
 		}
 
-		// 检查是否需要执行巡检
-		shouldInspect := false
-		isFirstInspection := true // 默认为首次巡检
-
-		// 1. 如果强制执行,直接巡检
-		if forceInspect {
-			shouldInspect = true
-			logc.Infof(ins.ctx.Ctx, "强制巡检: tenantId=%s", tenantId)
-		} else {
-			// 2. 检查是否有历史巡检记录 (任意数据源有记录就不是首次)
-			for _, dsId := range config.DatasourceIds {
-				latestInspection, _ := ins.ctx.DB.ExporterMonitor().GetLatestInspection(tenantId, dsId)
-				if latestInspection != nil {
-					// 发现有历史记录,不是首次巡检
-					isFirstInspection = false
-					break
-				}
-			}
-
-			// 3. 如果是首次巡检,立即执行
-			if isFirstInspection {
-				shouldInspect = true
-				logc.Infof(ins.ctx.Ctx, "检测到首次巡检: tenantId=%s, 立即执行初始化巡检", tenantId)
-			} else {
-				// 4. 否则检查当前时间是否在配置的巡检时间点中
-				for _, inspectionTime := range config.InspectionTimes {
-					if inspectionTime == currentTime {
-						shouldInspect = true
-						break
-					}
-				}
-			}
+		if ins.shouldExecuteInspection(config, currentTime, forceInspect) {
+			ins.executeInspectionForTenant(tenantId, config)
 		}
-
-		// 如果不需要巡检,跳过
-		if !shouldInspect {
-			continue
-		}
-
-		if !isFirstInspection {
-			logc.Infof(ins.ctx.Ctx, "开始执行巡检: tenantId=%s, 当前时间=%s", tenantId, currentTime)
-		}
-
-		// 遍历配置的数据源
-		for _, dsId := range config.DatasourceIds {
-			err := ins.InspectDatasource(dsId)
-			if err != nil {
-				logc.Errorf(ins.ctx.Ctx, "巡检数据源失败: datasourceId=%s, err=%v", dsId, err)
-				continue
-			}
-		}
-
-		// 清理过期数据
-		err = ins.ctx.DB.ExporterMonitor().DeleteExpiredInspections(tenantId, config.HistoryRetention)
-		if err != nil {
-			logc.Errorf(ins.ctx.Ctx, "清理过期巡检数据失败: tenantId=%s, err=%v", tenantId, err)
-		}
-
-		executedCount++
-	}
-
-	if executedCount > 0 {
-		logc.Infof(ins.ctx.Ctx, "巡检完成: 执行了 %d 个租户的巡检任务", executedCount)
 	}
 
 	return nil
 }
 
-// InspectDatasource 巡检单个 Prometheus 数据源并写入数据库
+// shouldExecuteInspection determines if inspection should run for this tenant
+func (ins *Inspector) shouldExecuteInspection(config models.ExporterMonitorConfig, currentTime string, forceInspect bool) bool {
+	if forceInspect {
+		return true
+	}
+
+	if ins.isFirstTimeInspection(config) {
+		return true
+	}
+
+	return ins.isScheduledTime(config.InspectionTimes, currentTime)
+}
+
+// isFirstTimeInspection checks if this is the first inspection for any datasource
+func (ins *Inspector) isFirstTimeInspection(config models.ExporterMonitorConfig) bool {
+	for _, dsId := range config.DatasourceIds {
+		latestInspection, _ := ins.ctx.DB.ExporterMonitor().GetLatestInspection(config.TenantId, dsId)
+		if latestInspection != nil {
+			return false
+		}
+	}
+	return true
+}
+
+// isScheduledTime checks if current time matches any scheduled inspection time
+func (ins *Inspector) isScheduledTime(inspectionTimes []string, currentTime string) bool {
+	for _, inspectionTime := range inspectionTimes {
+		if inspectionTime == currentTime {
+			return true
+		}
+	}
+	return false
+}
+
+// executeInspectionForTenant runs inspection for all datasources of a tenant
+func (ins *Inspector) executeInspectionForTenant(tenantId string, config models.ExporterMonitorConfig) {
+	for _, dsId := range config.DatasourceIds {
+		_ = ins.InspectDatasource(dsId) // Ignore individual errors to continue with other datasources
+	}
+
+	// Clean up expired data
+	_ = ins.ctx.DB.ExporterMonitor().DeleteExpiredInspections(tenantId, config.HistoryRetention)
+}
+
+// InspectDatasource performs health check on a single Prometheus datasource
 func (ins *Inspector) InspectDatasource(datasourceId string) error {
-	// 1. 获取数据源信息
-	datasource, err := ins.ctx.DB.Datasource().Get(datasourceId)
+	datasource, err := ins.getDatasourceInfo(datasourceId)
 	if err != nil {
-		return fmt.Errorf("获取数据源失败: %w", err)
+		return err
 	}
 
-	// 2. 从 ProviderPools 获取 Provider
-	providerInterface, err := ins.ctx.Redis.ProviderPools().GetClient(datasourceId)
+	prometheusProvider, err := ins.getPrometheusProvider(datasourceId)
 	if err != nil {
-		return fmt.Errorf("获取数据源 Provider 失败: %w", err)
+		return err
 	}
 
-	// 3. 类型断言为 PrometheusProvider
-	prometheusProvider, ok := providerInterface.(provider.PrometheusProvider)
-	if !ok {
-		return fmt.Errorf("数据源类型不是 Prometheus")
-	}
-
-	// 4. 获取所有 Targets
 	targets, err := prometheusProvider.GetTargets()
 	if err != nil {
-		return fmt.Errorf("获取 Targets 失败: %w", err)
+		return fmt.Errorf("failed to get targets from datasource %s: %w", datasourceId, err)
 	}
 
-	// 5. 生成巡检批次ID
+	return ins.processAndStoreInspectionResults(datasource, targets)
+}
+
+// getDatasourceInfo retrieves datasource information from database
+func (ins *Inspector) getDatasourceInfo(datasourceId string) (*models.AlertDataSource, error) {
+	datasource, err := ins.ctx.DB.Datasource().Get(datasourceId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get datasource %s: %w", datasourceId, err)
+	}
+	return &datasource, nil
+}
+
+// getPrometheusProvider gets and validates Prometheus provider from pool
+func (ins *Inspector) getPrometheusProvider(datasourceId string) (provider.PrometheusProvider, error) {
+	providerInterface, err := ins.ctx.Redis.ProviderPools().GetClient(datasourceId)
+	if err != nil {
+		return provider.PrometheusProvider{}, fmt.Errorf("failed to get provider for datasource %s: %w", datasourceId, err)
+	}
+
+	prometheusProvider, ok := providerInterface.(provider.PrometheusProvider)
+	if !ok {
+		return provider.PrometheusProvider{}, fmt.Errorf("datasource %s is not prometheus type, actual type: %T", datasourceId, providerInterface)
+	}
+
+	return prometheusProvider, nil
+}
+
+// processAndStoreInspectionResults processes targets and stores inspection results
+func (ins *Inspector) processAndStoreInspectionResults(datasource *models.AlertDataSource, targets []TargetHealth) error {
 	inspectionId := uuid.New().String()
 	inspectionTime := time.Now()
 
-	// 6. 统计数据
-	upCount := 0
-	downCount := 0
-	unknownCount := 0
-	downListSummary := make([]map[string]interface{}, 0)
-	details := make([]models.ExporterInspectionDetail, 0, len(targets))
+	statistics := ins.calculateTargetStatistics(targets)
+	details := ins.createInspectionDetails(datasource, targets, inspectionId, inspectionTime)
 
-	for _, target := range targets {
-		// 解析时间
-		lastScrapeTime, _ := time.Parse(time.RFC3339, target.LastScrape)
+	inspection := ins.buildInspectionRecord(datasource, inspectionId, inspectionTime, statistics)
 
-		// 判断状态
-		status := MapHealthStatus(target.Health, target.LastError)
-
-		// 转换 Labels
-		labels := make(map[string]interface{})
-		for k, v := range target.Labels {
-			labels[k] = v
-		}
-
-		// 创建明细记录
-		detail := models.ExporterInspectionDetail{
-			InspectionId:   inspectionId,
-			TenantId:       datasource.TenantId,
-			DatasourceId:   datasourceId,
-			DatasourceName: datasource.Name,
-			Job:            target.Job,
-			Instance:       target.Instance,
-			Labels:         labels,
-			ScrapeUrl:      target.ScrapeUrl,
-			Status:         status,
-			LastScrapeTime: lastScrapeTime,
-			LastError:      target.LastError,
-			CreatedAt:      inspectionTime,
-		}
-
-		// 统计数量
-		switch status {
-		case "up":
-			upCount++
-		case "down":
-			downCount++
-			// 收集前10个DOWN实例到摘要
-			if len(downListSummary) < 10 {
-				downListSummary = append(downListSummary, map[string]interface{}{
-					"instance":  target.Instance,
-					"job":       target.Job,
-					"lastError": target.LastError,
-				})
-			}
-		case "unknown":
-			unknownCount++
-		}
-
-		details = append(details, detail)
+	if err := ins.ctx.DB.ExporterMonitor().CreateInspection(inspection); err != nil {
+		return fmt.Errorf("failed to create inspection record for datasource %s: %w", datasource.ID, err)
 	}
 
-	// 7. 计算可用率
-	totalCount := len(targets)
-	availabilityRate := 0.0
-	if totalCount > 0 {
-		availabilityRate = float64(upCount) / float64(totalCount) * 100
+	if err := ins.ctx.DB.ExporterMonitor().CreateInspectionDetails(details); err != nil {
+		return fmt.Errorf("failed to create inspection details for datasource %s: %w", datasource.ID, err)
 	}
 
-	// 8. 创建主表记录
-	inspection := models.ExporterInspection{
-		InspectionId:     inspectionId,
-		TenantId:         datasource.TenantId,
-		DatasourceId:     datasourceId,
-		DatasourceName:   datasource.Name,
-		InspectionTime:   inspectionTime,
-		TotalCount:       totalCount,
-		UpCount:          upCount,
-		DownCount:        downCount,
-		UnknownCount:     unknownCount,
-		AvailabilityRate: availabilityRate,
-		DownListSummary:  downListSummary,
-	}
-
-	err = ins.ctx.DB.ExporterMonitor().CreateInspection(inspection)
-	if err != nil {
-		return fmt.Errorf("创建巡检主记录失败: %w", err)
-	}
-
-	// 9. 批量插入明细记录
-	err = ins.ctx.DB.ExporterMonitor().CreateInspectionDetails(details)
-	if err != nil {
-		return fmt.Errorf("创建巡检明细失败: %w", err)
-	}
-
-	logc.Infof(ins.ctx.Ctx, "巡检完成: datasource=%s, total=%d, up=%d, down=%d, unknown=%d",
-		datasource.Name, totalCount, upCount, downCount, unknownCount)
+	// 输出巡检汇总日志
+	logc.Infof(ins.ctx.Ctx, "巡检完成: datasource=%s(%s), total=%d, up=%d, down=%d, unknown=%d, availability=%.2f%%",
+		datasource.Name, datasource.ID, statistics.TotalCount, statistics.UpCount, 
+		statistics.DownCount, statistics.UnknownCount, statistics.AvailabilityRate)
 
 	return nil
 }
 
-// MapHealthStatus 映射 Prometheus Health 状态
+// TargetStatistics represents the statistics of target health status
+type TargetStatistics struct {
+	TotalCount       int
+	UpCount          int
+	DownCount        int
+	UnknownCount     int
+	AvailabilityRate float64
+	DownListSummary  []map[string]interface{}
+}
+
+// calculateTargetStatistics analyzes targets and returns health statistics
+func (ins *Inspector) calculateTargetStatistics(targets []TargetHealth) TargetStatistics {
+	stats := TargetStatistics{
+		TotalCount:      len(targets),
+		DownListSummary: make([]map[string]interface{}, 0),
+	}
+
+	for _, target := range targets {
+		status := MapHealthStatus(target.Health, target.LastError)
+
+		switch status {
+		case "up":
+			stats.UpCount++
+		case "down":
+			stats.DownCount++
+			ins.addToDownListSummary(&stats, target)
+		case "unknown":
+			stats.UnknownCount++
+		}
+	}
+
+	if stats.TotalCount > 0 {
+		stats.AvailabilityRate = float64(stats.UpCount) / float64(stats.TotalCount) * 100
+	}
+
+	return stats
+}
+
+// addToDownListSummary adds a down target to the summary (max 10 items)
+func (ins *Inspector) addToDownListSummary(stats *TargetStatistics, target TargetHealth) {
+	if len(stats.DownListSummary) < 10 {
+		stats.DownListSummary = append(stats.DownListSummary, map[string]interface{}{
+			"instance":  target.Instance,
+			"job":       target.Job,
+			"lastError": target.LastError,
+		})
+	}
+}
+
+// createInspectionDetails creates detailed inspection records for all targets
+func (ins *Inspector) createInspectionDetails(datasource *models.AlertDataSource, targets []TargetHealth, inspectionId string, inspectionTime time.Time) []models.ExporterInspectionDetail {
+	details := make([]models.ExporterInspectionDetail, 0, len(targets))
+
+	for _, target := range targets {
+		detail := ins.buildInspectionDetail(datasource, target, inspectionId, inspectionTime)
+		details = append(details, detail)
+	}
+
+	return details
+}
+
+// buildInspectionDetail creates a single inspection detail record
+func (ins *Inspector) buildInspectionDetail(datasource *models.AlertDataSource, target TargetHealth, inspectionId string, inspectionTime time.Time) models.ExporterInspectionDetail {
+	lastScrapeTime, _ := time.Parse(time.RFC3339, target.LastScrape)
+	status := MapHealthStatus(target.Health, target.LastError)
+
+	labels := make(map[string]interface{})
+	for k, v := range target.Labels {
+		labels[k] = v
+	}
+
+	return models.ExporterInspectionDetail{
+		InspectionId:   inspectionId,
+		TenantId:       datasource.TenantId,
+		DatasourceId:   datasource.ID,
+		DatasourceName: datasource.Name,
+		Job:            target.Job,
+		Instance:       target.Instance,
+		Labels:         labels,
+		ScrapeUrl:      target.ScrapeUrl,
+		Status:         status,
+		LastScrapeTime: lastScrapeTime,
+		LastError:      target.LastError,
+		CreatedAt:      inspectionTime,
+	}
+}
+
+// buildInspectionRecord creates the main inspection record
+func (ins *Inspector) buildInspectionRecord(datasource *models.AlertDataSource, inspectionId string, inspectionTime time.Time, stats TargetStatistics) models.ExporterInspection {
+	return models.ExporterInspection{
+		InspectionId:     inspectionId,
+		TenantId:         datasource.TenantId,
+		DatasourceId:     datasource.ID,
+		DatasourceName:   datasource.Name,
+		InspectionTime:   inspectionTime,
+		TotalCount:       stats.TotalCount,
+		UpCount:          stats.UpCount,
+		DownCount:        stats.DownCount,
+		UnknownCount:     stats.UnknownCount,
+		AvailabilityRate: stats.AvailabilityRate,
+		DownListSummary:  stats.DownListSummary,
+	}
+}
+
+// MapHealthStatus maps Prometheus health status to our internal status
 func MapHealthStatus(health string, lastError string) string {
 	if health == "up" && lastError == "" {
 		return "up"
@@ -246,8 +273,8 @@ func MapHealthStatus(health string, lastError string) string {
 	return "unknown"
 }
 
-// getAllTenantIds 获取所有已启用的租户ID
-func (ins *Inspector) getAllTenantIds() []string {
+// getAllActiveTenantIds retrieves all tenant IDs with enabled exporter monitoring
+func (ins *Inspector) getAllActiveTenantIds() []string {
 	var tenantIds []string
 	err := ins.ctx.DB.DB().Model(&models.ExporterMonitorConfig{}).
 		Select("tenant_id").
@@ -255,7 +282,6 @@ func (ins *Inspector) getAllTenantIds() []string {
 		Scan(&tenantIds).Error
 
 	if err != nil {
-		logc.Errorf(ins.ctx.Ctx, "获取租户列表失败: %v", err)
 		return []string{}
 	}
 

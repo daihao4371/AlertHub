@@ -8,7 +8,6 @@ import (
 	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
-	"github.com/zeromicro/go-zero/core/logc"
 )
 
 type (
@@ -36,27 +35,37 @@ func (d *DingDingSender) Send(params SendParams) error {
 	return d.post(params.Hook, params.Content)
 }
 
-// getDingdingTestKeyword 获取钉钉测试消息的关键词
-// 根据通知对象名称智能识别关键词，如果没有则使用默认关键词"告警"
+// getDingdingTestKeyword gets appropriate keyword for DingDing robot based on notice name
+// Uses a keyword mapping table for better maintainability and readability
 func getDingdingTestKeyword(noticeName string) string {
-	// 默认关键词：告警（最常见的钉钉机器人关键词）
+	// Default keyword for most common DingDing robot configurations
 	defaultKeyword := "告警"
 
-	// 如果通知对象名称为空，直接返回默认关键词
+	// Return default keyword if notice name is empty
 	if noticeName == "" {
 		return defaultKeyword
 	}
 
-	// 检查通知对象名称中是否包含关键词提示
-	// 例如：如果通知对象名称包含"报警"，则使用"报警"作为关键词
-	if strings.Contains(noticeName, "报警") {
-		return "报警"
+	// Keyword mapping table - more maintainable than multiple if statements
+	// Priority: first match wins, so order matters for overlapping keywords
+	keywordMappings := []struct {
+		contains string
+		keyword  string
+	}{
+		{"报警", "报警"},     // Alert-related notifications
+		{"Alert", "Alert"}, // English alert notifications
+		{"监控", "监控"},     // Monitoring notifications
+		{"巡检", "巡检"},     // Inspection/health check notifications  
+		{"健康", "健康"},     // Health check notifications
+		{"报告", "报告"},     // Report notifications
+		{"测试", "测试"},     // Test notifications
 	}
-	if strings.Contains(noticeName, "Alert") {
-		return "Alert"
-	}
-	if strings.Contains(noticeName, "监控") {
-		return "监控"
+
+	// Check each keyword mapping in order
+	for _, mapping := range keywordMappings {
+		if strings.Contains(noticeName, mapping.contains) {
+			return mapping.keyword
+		}
 	}
 
 	return defaultKeyword
@@ -86,41 +95,26 @@ func (d *DingDingSender) Test(params SendParams) error {
 }
 
 func (d *DingDingSender) post(hook, content string) error {
-	// 记录发送内容（用于调试，仅记录前500字符）
-	contentPreview := content
-	if len(content) > 500 {
-		contentPreview = content[:500] + "..."
-	}
-	logc.Info(nil, fmt.Sprintf("发送钉钉消息，Hook: %s, 内容预览: %s", hook, contentPreview))
-
 	cardContentByte := bytes.NewReader([]byte(content))
 	res, err := tools.Post(nil, hook, cardContentByte, 10)
 	if err != nil {
-		logc.Error(nil, fmt.Sprintf("钉钉消息发送失败（网络错误）: Hook=%s, 错误=%s", hook, err.Error()))
 		return fmt.Errorf("钉钉消息发送失败: %w", err)
 	}
 	defer res.Body.Close()
 
-	// 读取响应体（用于调试）
 	bodyBytes, err := io.ReadAll(res.Body)
 	if err != nil {
-		logc.Error(nil, fmt.Sprintf("读取钉钉响应失败: Hook=%s, 错误=%s", hook, err.Error()))
 		return fmt.Errorf("读取钉钉响应失败: %w", err)
 	}
 
 	var response DingResponse
-	// 使用 sonic 解析 JSON（更高效）
 	if err := sonic.Unmarshal(bodyBytes, &response); err != nil {
-		logc.Error(nil, fmt.Sprintf("解析钉钉响应失败: Hook=%s, 响应内容=%s, 错误=%s", hook, string(bodyBytes), err.Error()))
 		return fmt.Errorf("解析钉钉响应失败: %w, 响应内容: %s", err, string(bodyBytes))
 	}
 
 	if response.Code != 0 {
-		logc.Error(nil, fmt.Sprintf("钉钉消息发送失败（API错误）: Hook=%s, Code=%d, Msg=%s, 发送内容预览=%s",
-			hook, response.Code, response.Msg, contentPreview))
 		return fmt.Errorf("钉钉API返回错误: Code=%d, Msg=%s", response.Code, response.Msg)
 	}
 
-	logc.Info(nil, fmt.Sprintf("钉钉消息发送成功: Hook=%s", hook))
 	return nil
 }

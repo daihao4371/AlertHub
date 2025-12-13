@@ -1,12 +1,12 @@
 package consumer
 
 import (
-	"fmt"
-	"time"
 	"alertHub/alert/mute"
 	"alertHub/alert/process"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
+	"fmt"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
@@ -191,7 +191,7 @@ func sendAggregatedAlert(ctx *ctx.Context, faultCenter models.FaultCenter, aggre
 
 // getContent 生成聚合通知内容
 func getContent(number int) string {
-	return fmt.Sprintf("\n聚合 %d 条升级通知, 详情请前往 WatchAlert 查看", number)
+	return fmt.Sprintf("\n聚合 %d 条升级通知, 详情请前往 AlertHub 查看", number)
 }
 
 // checkTimeout 检查是否超时 duration 单位为分钟

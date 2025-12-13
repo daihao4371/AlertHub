@@ -1,12 +1,12 @@
 package api
 
 import (
-	"time"
 	"alertHub/internal/middleware"
 	"alertHub/internal/models"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
 	"alertHub/pkg/response"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )

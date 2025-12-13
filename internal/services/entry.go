@@ -39,6 +39,7 @@ var (
 	QuickActionService      InterQuickActionService
 	ExporterMonitorService  InterExporterMonitorService
 	PrometheusProxyService  InterPrometheusProxyService
+	MetricsExplorerService  InterMetricsExplorerService
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -74,4 +75,5 @@ func NewServices(ctx *ctx.Context) {
 	QuickActionService = newInterQuickActionService(ctx)
 	ExporterMonitorService = newInterExporterMonitorService(ctx)
 	PrometheusProxyService = newInterPrometheusProxyService(ctx)
+	MetricsExplorerService = newInterMetricsExplorerService(ctx)
 }
