@@ -47,7 +47,8 @@ func Router(engine *gin.Engine) {
 			api.FaultCenterController.API(w8t)
 			api.AiController.API(w8t)
 			api.ExporterMonitorController.API(w8t)
-		api.PrometheusProxyController.API(w8t)
+			api.PrometheusProxyController.API(w8t)
+			api.MetricsExplorerController.API(w8t)
 		}
 
 		oidc := v1.Group("oidc")
