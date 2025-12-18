@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver: docker-container
+
+      - name: Check ACR credentials
+        id: check_acr
+        run: |
+          if [ -n "${{ secrets.ALIYUN_ACR_USER }}" ] && [ -n "${{ secrets.ALIYUN_ACR_PASSWORD }}" ]; then
+            echo "has_creds=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_creds=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract and validate tag
+        id: tag
+        run: |
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          echo "tag_name=${TAG_NAME}" >> $GITHUB_OUTPUT
+          echo "✅ 提取的 tag: ${TAG_NAME}"
+          
+          if [[ ! "${TAG_NAME}" =~ ^v[0-9] ]]; then
+            echo "❌ 错误: tag 格式不对: ${TAG_NAME}"
+            exit 1
+          fi
+
+      - name: Login to Aliyun Container Registry
+        if: steps.check_acr.outputs.has_creds == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}
+          username: ${{ secrets.ALIYUN_ACR_USER }}
+          password: ${{ secrets.ALIYUN_ACR_PASSWORD }}
+
+      - name: Prepare image tags
+        id: image_tags
+        run: |
+          REGISTRY="${{ secrets.ALIYUN_ACR_REGISTRY || 'registry.cn-hangzhou.aliyuncs.com' }}"
+          NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
+          REPO="alerthub"
+          TAG_NAME="${{ steps.tag.outputs.tag_name }}"
+          
+          IMAGE_LATEST="${REGISTRY}/${NAMESPACE}/${REPO}:latest"
+          IMAGE_VERSION="${REGISTRY}/${NAMESPACE}/${REPO}:${TAG_NAME}"
+          
+          echo "latest=${IMAGE_LATEST}" >> $GITHUB_OUTPUT
+          echo "version=${IMAGE_VERSION}" >> $GITHUB_OUTPUT
+          
+          echo "📦 将推送以下镜像:"
+          echo "  - ${IMAGE_LATEST}"
+          echo "  - ${IMAGE_VERSION}"
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: ${{ steps.check_acr.outputs.has_creds == 'true' }}
+          provenance: false
+          sbom: false
+          build-args: |
+            VERSION=${{ steps.tag.outputs.tag_name }}
+          tags: |
+            ${{ steps.image_tags.outputs.latest }}
+            ${{ steps.image_tags.outputs.version }}

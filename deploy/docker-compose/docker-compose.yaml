@@ -1,0 +1,90 @@
+version: "3"
+services:
+  alerthub-service:
+    container_name: alerthub-service
+    image: docker.io/cairry/alerthub:latest
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - ../../config/config.yaml:/app/config/config.yaml
+    restart: always
+    privileged: true
+    ports:
+      - "9001:9001"
+    healthcheck:
+      test: ["CMD", "wget", "-O", "-", "http://localhost:9001/hello"]
+      interval: 5s
+      timeout: 2s
+      retries: 10
+    depends_on:
+      - alerthub-mysql
+      - alerthub-redis
+    networks:
+      - alerthub
+
+  alerthub-web:
+    container_name: alerthub-web
+    image: docker.io/cairry/alerthub-web:latest
+    environment:
+      - TZ=Asia/Shanghai
+    restart: always
+    privileged: true
+    ports:
+      - "80:80"
+    networks:
+      - alerthub
+
+  alerthub-redis:
+    container_name: alerthub-redis
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    volumes:
+      - ./redis:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf:ro
+    environment:
+      - TZ=Asia/Shanghai
+    restart: always
+    networks:
+      - alerthub
+
+
+  alerthub-mysql:
+    container_name: alerthub-mysql
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_ROOT_PASSWORD=w8t.123
+      - MYSQL_DATABASE=alerthub
+    restart: always
+    networks:
+      - alerthub
+
+  #必须在服务启动创建表后再导入数据
+  init-mysql:
+    container_name: init-mysql
+    image: mysql:8.0
+    volumes:
+      -  ../helmchart/files/sql:/sql
+    environment:
+      - TZ=Asia/Shanghai
+      - MYSQL_HOST=alerthub-mysql
+      - MYSQL_USERNAME=root
+      - MYSQL_PASSWORD=w8t.123
+      - MYSQL_DATABASE=alerthub
+    restart: on-failure
+    command: ["sh", "-c", "chmod +x /sql/auto_import.sh; /sql/auto_import.sh"]
+    depends_on:
+      - alerthub-mysql
+      - alerthub-service
+    networks:
+      - alerthub
+
+networks:
+  alerthub:
+    driver: bridge

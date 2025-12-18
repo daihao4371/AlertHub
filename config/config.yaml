@@ -1,0 +1,22 @@
+Server:
+  port: "9001"
+  # release / debug / test
+  mode: "release"
+
+MySQL:
+  host: 10.10.217.225
+  port: 3306
+  user: root
+  pass: 123456
+  dbName: alerthub
+  timeout: 10s
+
+Redis:
+  host: 10.10.217.225
+  port: 6380
+  pass: ""
+  database: 0
+
+Jwt:
+  # 失效时间
+  expire: 18000
