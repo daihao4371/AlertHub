@@ -21,7 +21,7 @@ func (exporterMonitorController exporterMonitorController) API(gin *gin.RouterGr
 	a := gin.Group("exporter/monitor")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.AuditingLog(),
 	)
 	{
@@ -41,7 +41,7 @@ func (exporterMonitorController exporterMonitorController) API(gin *gin.RouterGr
 	b := gin.Group("exporter/monitor")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 	)
 	{
 		// 查询接口

@@ -15,7 +15,7 @@ func (dashboardController dashboardController) API(gin *gin.RouterGroup) {
 	a := gin.Group("dashboard")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -28,7 +28,7 @@ func (dashboardController dashboardController) API(gin *gin.RouterGroup) {
 	b := gin.Group("dashboard")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

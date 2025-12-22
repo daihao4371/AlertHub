@@ -21,7 +21,7 @@ func (tenantController tenantController) API(gin *gin.RouterGroup) {
 	a := gin.Group("tenant")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.AuditingLog(),
 	)
 	{
@@ -36,7 +36,7 @@ func (tenantController tenantController) API(gin *gin.RouterGroup) {
 	b := gin.Group("tenant")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 	)
 	{
 		b.GET("getTenantList", tenantController.List)

@@ -22,7 +22,7 @@ func (alertEventController alertEventController) API(gin *gin.RouterGroup) {
 	a := gin.Group("event")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

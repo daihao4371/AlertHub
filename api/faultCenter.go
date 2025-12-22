@@ -16,7 +16,7 @@ func (faultCenterController faultCenterController) API(gin *gin.RouterGroup) {
 	faultCenterA := gin.Group("faultCenter")
 	faultCenterA.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -30,7 +30,7 @@ func (faultCenterController faultCenterController) API(gin *gin.RouterGroup) {
 	faultCenterB := gin.Group("faultCenter")
 	faultCenterB.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

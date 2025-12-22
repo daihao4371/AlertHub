@@ -19,7 +19,7 @@ func (ruleTmplController ruleTmplController) API(gin *gin.RouterGroup) {
 	a := gin.Group("ruleTmpl")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -32,7 +32,7 @@ func (ruleTmplController ruleTmplController) API(gin *gin.RouterGroup) {
 	b := gin.Group("ruleTmpl")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{
