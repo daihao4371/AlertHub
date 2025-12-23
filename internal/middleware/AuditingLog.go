@@ -35,14 +35,6 @@ func AuditingLog() gin.HandlerFunc {
 		// 将 body 数据放回请求中
 		context.Request.Body = ioutil.NopCloser(bytes.NewBuffer(readBody))
 
-		// 获取请求类型
-		var reqTypeKey string
-		// 获取 uri 的最后一位来定位审计类型
-		splitAPI := strings.Split(context.Request.URL.Path, "/")
-		if len(splitAPI) > 0 {
-			reqTypeKey = splitAPI[len(splitAPI)-1]
-		}
-
 		tid := context.Request.Header.Get(TenantIDHeaderKey)
 		if tid == "" {
 			response.Fail(context, "租户ID不能为空", "failed")
@@ -53,7 +45,9 @@ func AuditingLog() gin.HandlerFunc {
 		// 当请求处理完成后才会执行 Next() 后面的代码
 		context.Next()
 
-		ps := models.PermissionsInfo()
+		// 生成操作描述，使用通用格式
+		actionDesc := generateActionDescription(context.Request.Method, context.Request.URL.Path)
+		
 		auditLog := models.AuditLog{
 			TenantId:   tid,
 			ID:         "Trace" + tools.RandId(),
@@ -64,7 +58,7 @@ func AuditingLog() gin.HandlerFunc {
 			CreatedAt:  time.Now().Unix(),
 			StatusCode: context.Writer.Status(),
 			Body:       string(readBody),
-			AuditType:  ps[reqTypeKey].Key,
+			AuditType:  actionDesc,
 		}
 
 		c := ctx.DO()
@@ -74,5 +68,29 @@ func AuditingLog() gin.HandlerFunc {
 			context.Abort()
 			return
 		}
+	}
+}
+
+// generateActionDescription 生成操作描述
+func generateActionDescription(method, path string) string {
+	// 提取路径的最后一部分作为操作名称
+	pathSegments := strings.Split(path, "/")
+	var actionName string
+	if len(pathSegments) > 0 {
+		actionName = pathSegments[len(pathSegments)-1]
+	}
+	
+	// 根据HTTP方法生成操作描述
+	switch method {
+	case "POST":
+		return "创建" + actionName
+	case "PUT":
+		return "更新" + actionName  
+	case "DELETE":
+		return "删除" + actionName
+	case "GET":
+		return "查看" + actionName
+	default:
+		return method + " " + actionName
 	}
 }

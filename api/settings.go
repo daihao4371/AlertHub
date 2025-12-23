@@ -15,7 +15,7 @@ func (settingsController settingsController) API(gin *gin.RouterGroup) {
 	a := gin.Group("setting")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.AuditingLog(),
 	)
 	{
@@ -25,7 +25,7 @@ func (settingsController settingsController) API(gin *gin.RouterGroup) {
 	b := gin.Group("setting")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 	)
 	{
 		b.GET("getSystemSetting", settingsController.Get)

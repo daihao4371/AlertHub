@@ -15,7 +15,7 @@ func (subscribeController subscribeController) API(gin *gin.RouterGroup) {
 	a := gin.Group("subscribe")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.AuditingLog(),
 		middleware.ParseTenant(),
 	)
@@ -27,7 +27,7 @@ func (subscribeController subscribeController) API(gin *gin.RouterGroup) {
 	b := gin.Group("subscribe")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

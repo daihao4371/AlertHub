@@ -18,7 +18,7 @@ func (probingController probingController) API(gin *gin.RouterGroup) {
 	a := gin.Group("probing")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -31,7 +31,7 @@ func (probingController probingController) API(gin *gin.RouterGroup) {
 	b := gin.Group("probing")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

@@ -21,7 +21,7 @@ func (dutyController dutyController) API(gin *gin.RouterGroup) {
 	a := gin.Group("dutyManage")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -34,7 +34,7 @@ func (dutyController dutyController) API(gin *gin.RouterGroup) {
 	b := gin.Group("dutyManage")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

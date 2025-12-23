@@ -51,7 +51,8 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.AlertSilences{},
 		&models.Member{},
 		&models.UserRole{},
-		&models.UserPermissions{},
+		&models.SysApi{},          // API权限表
+		&models.UserRoleApi{},     // 角色API关联表
 		&models.NoticeTemplateExample{},
 		&models.RuleGroups{},
 		&models.RuleTemplateGroup{},

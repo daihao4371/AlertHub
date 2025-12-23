@@ -22,7 +22,7 @@ func (noticeTemplateController noticeTemplateController) API(gin *gin.RouterGrou
 	a := gin.Group("noticeTemplate")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -34,7 +34,7 @@ func (noticeTemplateController noticeTemplateController) API(gin *gin.RouterGrou
 	b := gin.Group("noticeTemplate")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

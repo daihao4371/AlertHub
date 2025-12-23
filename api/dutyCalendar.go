@@ -19,7 +19,7 @@ func (dutyCalendarController dutyCalendarController) API(gin *gin.RouterGroup) {
 	a := gin.Group("calendar")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -31,7 +31,7 @@ func (dutyCalendarController dutyCalendarController) API(gin *gin.RouterGroup) {
 	b := gin.Group("calendar")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{
