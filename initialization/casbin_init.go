@@ -194,9 +194,9 @@ func InitCasbinPermissionsForExistingRoles(ctx *ctx.Context) error {
 			continue
 		}
 
-		// 对于admin和super_admin角色，检查权限是否完整
+		// 对于admin角色，检查权限是否完整
 		needsReinit := false
-		if role.Name == "admin" || role.Name == "super_admin" {
+		if role.Name == "admin" {
 			// 获取API总数
 			var totalApiCount int64
 			if err := db.Model(&models.SysApi{}).Where("enabled = ?", true).Count(&totalApiCount).Error; err != nil {
@@ -231,7 +231,7 @@ func InitCasbinPermissionsForExistingRoles(ctx *ctx.Context) error {
 
 		// 根据角色类型分配不同的权限集
 		switch {
-		case role.Name == "admin" || role.Name == "super_admin":
+		case role.Name == "admin":
 			// 从数据库获取所有API权限
 			apis, err := casbinService.GetAllApiPermissions()
 			if err != nil {
