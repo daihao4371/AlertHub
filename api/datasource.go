@@ -169,7 +169,7 @@ func (datasourceController datasourceController) API(gin *gin.RouterGroup) {
 	a := gin.Group("datasource")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -182,7 +182,7 @@ func (datasourceController datasourceController) API(gin *gin.RouterGroup) {
 	b := gin.Group("datasource")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

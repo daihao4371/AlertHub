@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -80,4 +81,20 @@ func ConvertSliceToMapList(slice interface{}) []map[string]interface{} {
 	}
 
 	return result
+}
+
+// BoolPtr 返回bool的指针，常用于初始化可选的bool字段
+func BoolPtr(b bool) *bool {
+	return &b
+}
+
+// ContainsAny 检查字符串是否包含任意一个子串
+// 用于多条件匹配，比逐个strings.Contains更简洁
+func ContainsAny(s string, substrs []string) bool {
+	for _, substr := range substrs {
+		if strings.Contains(s, substr) {
+			return true
+		}
+	}
+	return false
 }

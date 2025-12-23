@@ -22,7 +22,7 @@ func (noticeController noticeController) API(gin *gin.RouterGroup) {
 	a := gin.Group("notice")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -35,7 +35,7 @@ func (noticeController noticeController) API(gin *gin.RouterGroup) {
 	b := gin.Group("notice")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{

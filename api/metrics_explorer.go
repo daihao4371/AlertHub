@@ -19,7 +19,7 @@ func (c *metricsExplorerController) API(gin *gin.RouterGroup) {
 	group := gin.Group("metrics-explorer")
 	group.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 	)
 	{
 		// 指标浏览器核心接口

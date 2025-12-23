@@ -1,9 +1,6 @@
 package initialization
 
 import (
-	"context"
-	"fmt"
-	"sync"
 	"alertHub/alert"
 	"alertHub/config"
 	"alertHub/internal/cache"
@@ -16,6 +13,9 @@ import (
 	"alertHub/pkg/exporter"
 	"alertHub/pkg/templates"
 	"alertHub/pkg/tools"
+	"context"
+	"fmt"
+	"sync"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	"golang.org/x/sync/errgroup"
@@ -35,11 +35,16 @@ func InitBasic() {
 	// 启用告警评估携程
 	alert.Initialize(ctx)
 
-	// 初始化权限数据
-	InitPermissionsSQL(ctx)
+	// 初始化Casbin权限系统
+	InitCasbinSQL(ctx)
 
-	// 初始化角色数据
-	InitUserRolesSQL(ctx)
+	// 初始化SysApi权限数据
+	InitSysApiPermissions(ctx)
+
+	// 为现有角色初始化Casbin权限
+	if err := InitCasbinPermissionsForExistingRoles(ctx); err != nil {
+		logc.Errorf(ctx.Ctx, "为现有角色初始化Casbin权限失败: %s", err.Error())
+	}
 
 	// 导入数据源 Client 到存储池
 	importClientPools(ctx)
@@ -113,15 +118,11 @@ func gcHistoryData(ctx *ctx.Context) {
 		err := ctx.DB.Probing().DeleteRecord()
 		if err != nil {
 			logc.Errorf(ctx.Ctx, "fail to delete probe history data, %s", err.Error())
-		} else {
-			logc.Info(ctx.Ctx, "success delete probe history data")
 		}
 
 		err = ctx.DB.Notice().DeleteRecord()
 		if err != nil {
 			logc.Errorf(ctx.Ctx, "fail to delete notice history record, %s", err.Error())
-		} else {
-			logc.Info(ctx.Ctx, "success delete notice history record")
 		}
 	})
 }

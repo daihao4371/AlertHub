@@ -30,7 +30,6 @@ type (
 		Silence() InterSilenceRepo
 		User() InterUserRepo
 		UserRole() InterUserRoleRepo
-		UserPermissions() InterUserPermissionsRepo
 		Setting() InterSettingRepo
 		Subscribe() InterSubscribeRepo
 		Probing() InterProbingRepo
@@ -77,9 +76,6 @@ func (e *entryRepo) RuleTmplGroup() InterRuleTmplGroupRepo {
 func (e *entryRepo) Silence() InterSilenceRepo   { return newSilenceInterface(e.db, e.g) }
 func (e *entryRepo) User() InterUserRepo         { return newUserInterface(e.db, e.g) }
 func (e *entryRepo) UserRole() InterUserRoleRepo { return newUserRoleInterface(e.db, e.g) }
-func (e *entryRepo) UserPermissions() InterUserPermissionsRepo {
-	return newInterUserPermissionsRepo(e.db, e.g)
-}
 func (e *entryRepo) Setting() InterSettingRepo         { return newSettingRepoInterface(e.db, e.g) }
 func (e *entryRepo) Subscribe() InterSubscribeRepo     { return newInterSubscribeRepo(e.db, e.g) }
 func (e *entryRepo) Probing() InterProbingRepo         { return newProbingRepoInterface(e.db, e.g) }

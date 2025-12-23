@@ -24,7 +24,6 @@ var (
 	UserRoleService         InterUserRoleService
 	AlertService            InterAlertService
 	RuleTmplGroupService    InterRuleTmplGroupService
-	UserPermissionService   InterUserPermissionService
 	AWSRegionService        service.InterAwsRegionService
 	AWSCloudWatchService    service2.InterAwsCloudWatchService
 	AWSCloudWatchRdsService service2.InterAwsRdsService
@@ -40,6 +39,7 @@ var (
 	ExporterMonitorService  InterExporterMonitorService
 	PrometheusProxyService  InterPrometheusProxyService
 	MetricsExplorerService  InterMetricsExplorerService
+	CasbinPermissionService InterCasbinService // 新增Casbin权限服务
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -60,7 +60,6 @@ func NewServices(ctx *ctx.Context) {
 	UserService = newInterUserService(ctx)
 	UserRoleService = newInterUserRoleService(ctx)
 	AlertService = newInterAlertService(ctx)
-	UserPermissionService = newInterUserPermissionService(ctx)
 	AWSRegionService = service.NewInterAwsRegionService(ctx)
 	AWSCloudWatchService = service2.NewInterAwsCloudWatchService(ctx)
 	AWSCloudWatchRdsService = service2.NewInterAWSRdsService(ctx)
@@ -76,4 +75,5 @@ func NewServices(ctx *ctx.Context) {
 	ExporterMonitorService = newInterExporterMonitorService(ctx)
 	PrometheusProxyService = newInterPrometheusProxyService(ctx)
 	MetricsExplorerService = newInterMetricsExplorerService(ctx)
+	CasbinPermissionService = newInterCasbinService(ctx) // 初始化Casbin权限服务
 }

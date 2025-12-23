@@ -21,7 +21,6 @@ func Router(engine *gin.Engine) {
 		w8t := v1.Group("w8t")
 		{
 			api.UserController.API(w8t)
-			api.UserPermissionsController.API(w8t)
 			api.AlertEventController.API(w8t)
 			api.UserRoleController.API(w8t)
 			api.DashboardController.API(w8t)
@@ -49,6 +48,7 @@ func Router(engine *gin.Engine) {
 			api.ExporterMonitorController.API(w8t)
 			api.PrometheusProxyController.API(w8t)
 			api.MetricsExplorerController.API(w8t)
+			api.CasbinPermissionController.API(w8t)
 		}
 
 		oidc := v1.Group("oidc")

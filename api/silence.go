@@ -20,7 +20,7 @@ func (silenceController silenceController) API(gin *gin.RouterGroup) {
 	a := gin.Group("silence")
 	a.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
@@ -33,7 +33,7 @@ func (silenceController silenceController) API(gin *gin.RouterGroup) {
 	b := gin.Group("silence")
 	b.Use(
 		middleware.Auth(),
-		middleware.Permission(),
+		middleware.CasbinPermission(),
 		middleware.ParseTenant(),
 	)
 	{
