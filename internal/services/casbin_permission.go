@@ -1,14 +1,13 @@
 package services
 
 import (
-	"errors"
 	"fmt"
 	"sync"
 	
 	"github.com/casbin/casbin/v2"
 	"github.com/casbin/casbin/v2/model"
 	gormadapter "github.com/casbin/gorm-adapter/v3"
-	"gorm.io/gorm"
+	"github.com/zeromicro/go-zero/core/logc"
 	
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
@@ -262,36 +261,9 @@ func (c *casbinService) GetAllApiPermissions() ([]models.SysApi, error) {
 
 // EnsureAllApisRegistered 确保所有API已注册到SysApi表
 func (c *casbinService) EnsureAllApisRegistered() error {
-	db := c.ctx.DB.DB()
-	
-	// 获取预定义的API权限列表
-	predefinedApis := models.GetAllApiPermissions()
-	
-	for _, api := range predefinedApis {
-		var existingApi models.SysApi
-		err := db.Where("path = ? AND method = ?", api.Path, api.Method).First(&existingApi).Error
-		
-		if err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				// API不存在，创建新记录
-				enabled := true
-				newApi := models.SysApi{
-					Path:        api.Path,
-					Method:      api.Method,
-					Description: fmt.Sprintf("%s [%s]", api.Group, api.Method),
-					ApiGroup:    api.Group,
-					Enabled:     &enabled,
-				}
-				
-				if err := db.Create(&newApi).Error; err != nil {
-					return fmt.Errorf("创建API记录失败: %v", err)
-				}
-			} else {
-				return fmt.Errorf("查询API记录失败: %v", err)
-			}
-		}
-	}
-	
+	// 这个函数现在由API注册表系统负责
+	// 在初始化阶段已经通过initApiRegistry完成
+	logc.Infof(c.ctx.Ctx, "API注册已通过注册表系统完成")
 	return nil
 }
 

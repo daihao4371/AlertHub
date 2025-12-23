@@ -49,53 +49,11 @@ func DefaultPermissions() []PermissionInfo {
 }
 
 // GetAllApiPermissions 获取所有API权限配置(超级管理员)
+// 现在从数据库动态获取，而不是硬编码
 func GetAllApiPermissions() []PermissionInfo {
-	var permissions []PermissionInfo
-
-	// 基础系统权限
-	permissions = append(permissions, DefaultPermissions()...)
-
-	// API管理权限模块定义
-	apiModules := map[string][]string{
-		"用户管理": {"/api/w8t/user/*"},
-		"角色管理": {"/api/w8t/role/*"},
-		"数据源管理": {"/api/w8t/datasource/*"},
-		"告警规则": {"/api/w8t/rule/*", "/api/w8t/ruleGroup/*", "/api/w8t/ruleTmpl/*", "/api/w8t/ruleTmplGroup/*"},
-		"仪表板": {"/api/w8t/dashboard/*"},
-		"告警通知": {"/api/w8t/notice/*", "/api/w8t/noticeTmpl/*", "/api/w8t/noticeTemplate/*"},
-		"告警管理": {"/api/w8t/silence/*"},
-		"值班管理": {"/api/w8t/duty/*", "/api/w8t/dutyManage/*"},
-		"拨测管理": {"/api/w8t/probing/*"},
-		"故障中心": {"/api/w8t/faultCenter/*"},
-		"租户管理": {"/api/w8t/tenant/*"},
-		"系统设置": {"/api/w8t/setting/*"},
-		"监控查询": {"/api/w8t/prometheus/*", "/api/w8t/metrics/*"},
-		"权限管理": {"/api/w8t/casbin/*"},
-		"导出监控": {"/api/w8t/exporter/*"},
-		"订阅管理": {"/api/w8t/subscribe/*"},
-	}
-
-	// 标准HTTP方法
-	methods := []string{"GET", "POST", "PUT", "DELETE"}
-
-	// 生成所有权限组合
-	for group, paths := range apiModules {
-		for _, path := range paths {
-			for _, method := range methods {
-				// 对于监控查询模块，只需要GET和POST方法
-				if group == "监控查询" && (method == "PUT" || method == "DELETE") {
-					continue
-				}
-				permissions = append(permissions, PermissionInfo{
-					Path:   path,
-					Method: method,
-					Group:  group,
-				})
-			}
-		}
-	}
-
-	return permissions
+	// 这个函数保留是为了兼容性，但实际上应该从数据库获取
+	// 在实际使用中，应该调用 CasbinPermissionService.GetAllApiPermissions()
+	return []PermissionInfo{}
 }
 
 // GetBasicApiPermissions 获取基础权限配置(普通用户)

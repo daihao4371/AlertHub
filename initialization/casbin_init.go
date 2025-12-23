@@ -3,6 +3,7 @@ package initialization
 import (
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
+	"alertHub/internal/registry"
 	"alertHub/internal/services"
 	"alertHub/pkg/tools"
 	"fmt"
@@ -20,7 +21,13 @@ func InitCasbinSQL(ctx *ctx.Context) {
 		panic(err)
 	}
 
-	// 2. 检查是否需要初始化权限数据
+	// 2. 初始化API注册表
+	if err := initApiRegistry(ctx); err != nil {
+		logc.Errorf(ctx.Ctx, "初始化API注册表失败: %s", err.Error())
+		panic(err)
+	}
+
+	// 3. 检查是否需要初始化权限数据
 	needsInit, err := needsCasbinInitialization(ctx)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, "检查Casbin初始化状态失败: %s", err.Error())
@@ -28,7 +35,7 @@ func InitCasbinSQL(ctx *ctx.Context) {
 	}
 
 	if needsInit {
-		// 3. 初始化默认权限数据
+		// 4. 初始化默认权限数据
 		if err := initDefaultCasbinPermissions(ctx); err != nil {
 			logc.Errorf(ctx.Ctx, "初始化默认Casbin权限失败: %s", err.Error())
 			panic(err)
@@ -109,7 +116,24 @@ func needsCasbinInitialization(ctx *ctx.Context) (bool, error) {
 	}
 
 	// 如果admin角色没有权限，需要初始化
-	return adminPermissionCount == 0, nil
+	if adminPermissionCount == 0 {
+		return true, nil
+	}
+
+	// 检查是否有新的API需要为admin分配权限
+	// 获取数据库中所有API的数量
+	var totalApiCount int64
+	if err := db.Model(&models.SysApi{}).Where("enabled = ?", true).Count(&totalApiCount).Error; err != nil {
+		return false, fmt.Errorf("检查API总数失败: %v", err)
+	}
+
+	// 如果admin权限数量少于API总数，说明有新API需要分配权限
+	if adminPermissionCount < totalApiCount {
+		logc.Infof(ctx.Ctx, "检测到admin权限不完整: 权限数=%d, API总数=%d，将重新初始化", adminPermissionCount, totalApiCount)
+		return true, nil
+	}
+
+	return false, nil
 }
 
 // needsIndexCreation 检查是否需要创建索引
@@ -170,10 +194,37 @@ func InitCasbinPermissionsForExistingRoles(ctx *ctx.Context) error {
 			continue
 		}
 
-		// 如果角色已有权限，跳过
-		if permissionCount > 0 {
+		// 对于admin和super_admin角色，检查权限是否完整
+		needsReinit := false
+		if role.Name == "admin" || role.Name == "super_admin" {
+			// 获取API总数
+			var totalApiCount int64
+			if err := db.Model(&models.SysApi{}).Where("enabled = ?", true).Count(&totalApiCount).Error; err != nil {
+				logc.Errorf(ctx.Ctx, "获取API总数失败: %s", err.Error())
+				continue
+			}
+			
+			// 如果admin权限数量少于API总数，说明权限不完整，需要重新初始化
+			if permissionCount < totalApiCount {
+				needsReinit = true
+				logc.Infof(ctx.Ctx, "检测到角色 %s (%s) 权限不完整: 现有%d个, 应有%d个, 将重新初始化", 
+					role.ID, role.Name, permissionCount, totalApiCount)
+			}
+		}
+
+		// 如果角色已有完整权限，跳过
+		if permissionCount > 0 && !needsReinit {
 			logc.Infof(ctx.Ctx, "角色 %s (%s) 已有 %d 个权限，跳过初始化", role.ID, role.Name, permissionCount)
 			continue
+		}
+
+		// 如果需要重新初始化，先清除现有权限
+		if needsReinit {
+			if err := casbinService.RemoveRolePermissions(role.ID); err != nil {
+				logc.Errorf(ctx.Ctx, "清除角色 %s 现有权限失败: %s", role.ID, err.Error())
+				continue
+			}
+			logc.Infof(ctx.Ctx, "已清除角色 %s (%s) 的现有权限", role.ID, role.Name)
 		}
 
 		var permissions []models.PermissionInfo
@@ -181,7 +232,22 @@ func InitCasbinPermissionsForExistingRoles(ctx *ctx.Context) error {
 		// 根据角色类型分配不同的权限集
 		switch {
 		case role.Name == "admin" || role.Name == "super_admin":
-			permissions = models.GetAllApiPermissions()
+			// 从数据库获取所有API权限
+			apis, err := casbinService.GetAllApiPermissions()
+			if err != nil {
+				logc.Errorf(ctx.Ctx, "获取所有API权限失败: %s", err.Error())
+				continue
+			}
+			// 转换为PermissionInfo格式
+			for _, api := range apis {
+				if api.GetEnabled() {
+					permissions = append(permissions, models.PermissionInfo{
+						Path:   api.Path,
+						Method: api.Method,
+						Group:  api.ApiGroup,
+					})
+				}
+			}
 		case role.Name == "user":
 			permissions = models.GetBasicApiPermissions()
 		default:
@@ -299,5 +365,21 @@ func createCasbinIndexes(ctx *ctx.Context, db *gorm.DB) error {
 	}
 
 	logc.Infof(ctx.Ctx, "成功创建Casbin唯一索引")
+	return nil
+}
+
+// initApiRegistry 初始化API注册表
+func initApiRegistry(ctx *ctx.Context) error {
+	logc.Infof(ctx.Ctx, "开始初始化API注册表")
+	
+	// 创建API注册表实例
+	apiRegistry := registry.NewApiRegistry(ctx)
+	
+	// 注册所有API到数据库
+	if err := apiRegistry.RegisterToDatabase(); err != nil {
+		return fmt.Errorf("API注册表注册失败: %v", err)
+	}
+	
+	logc.Infof(ctx.Ctx, "API注册表初始化完成")
 	return nil
 }
