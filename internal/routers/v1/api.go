@@ -12,6 +12,7 @@ func Router(engine *gin.Engine) {
 		system := v1.Group("system")
 		{
 			api.DashboardInfoController.API(v1)
+			api.DashboardStatisticsController.API(v1)  // 首页统计数据API
 			system.POST("register", api.UserController.Register)
 			system.POST("login", api.UserController.Login)
 			system.GET("checkUser", api.UserController.CheckUser)

@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	middleware "alertHub/internal/middleware"
 	"alertHub/internal/services"
@@ -122,6 +123,12 @@ func (userRoleController userRoleController) GetUserRoles(ctx *gin.Context) {
 	BindQuery(ctx, r)
 
 	Service(ctx, func() (interface{}, interface{}) {
-		return services.UserRoleService.GetUserRoles(r.UserID)
+		// 获取租户ID
+		tenantID := ctx.Request.Header.Get("TenantID")
+		if tenantID == "" {
+			return nil, fmt.Errorf("租户ID不能为空")
+		}
+		
+		return services.UserRoleService.GetUserRolesInTenant(r.UserID, tenantID)
 	})
 }

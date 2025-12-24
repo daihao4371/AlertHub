@@ -70,7 +70,8 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/dashboard/getDashboardFullUrl", "GET", "获取仪表板完整URL", "仪表板"},
 
 		// 仪表板信息
-		{"/api/w8t/system/getDashboardInfo", "GET", "获取仪表板信息", "仪表板"},
+		{"/api/system/getDashboardInfo", "GET", "获取仪表板信息", "仪表板"},
+		{"/api/system/getDashboardStatistics", "GET", "获取首页统计数据", "仪表板"}, // 新增首页统计接口
 
 		// 数据源
 		{"/api/w8t/datasource/dataSourceCreate", "POST", "创建数据源", "数据源管理"},
