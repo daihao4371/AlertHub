@@ -64,10 +64,6 @@ func (ds dashboardStatisticsService) GetDashboardStatistics(req interface{}) (in
 	stats.Past7DaysMTTACompareRatio = ds.calculateCompareRatio(weekStats.MTTA, prevWeekStats.MTTA)
 	stats.Past7DaysMTTRCompareRatio = ds.calculateCompareRatio(weekStats.MTTR, prevWeekStats.MTTR)
 
-	// 添加调试日志，用于排查问题
-	logc.Infof(ds.ctx.Ctx, "统计结果 - 今日主告警: %d, 今日新增: %d, MTTA: %.2f, MTTR: %.2f", 
-		stats.TodayMainAlerts, stats.TodayNewAlerts, stats.Past7DaysMTTA, stats.Past7DaysMTTR)
-	
 	return stats, nil
 }
 
@@ -117,17 +113,10 @@ func (ds dashboardStatisticsService) getWeekAlertStats(tenantId, faultCenterId s
 		return stats
 	}
 	
-	logc.Infof(ds.ctx.Ctx, "从Redis获取到 %d 个告警事件，时间范围: %d-%d", len(currentEvents), startTime, endTime)
-	
 	for _, event := range currentEvents {
 		// 检查事件是否在统计时间范围内
 		if event.FirstTriggerTime >= startTime && event.FirstTriggerTime <= endTime {
 			stats.AllEvents++
-			
-			// 添加详细调试日志，检查每个事件的认领状态
-			logc.Infof(ds.ctx.Ctx, "检查告警认领状态 - 指纹: %s, 规则: %s, 已认领: %t, 认领人: %s, 认领时间: %d", 
-				event.Fingerprint, event.RuleName, event.ConfirmState.IsOk, 
-				event.ConfirmState.ConfirmUsername, event.ConfirmState.ConfirmActionTime)
 			
 			// 统计主告警数量
 			if event.Severity == "P0" || event.Severity == "P1" {
@@ -141,12 +130,7 @@ func (ds dashboardStatisticsService) getWeekAlertStats(tenantId, faultCenterId s
 				if acknowledgeTime > 0 {
 					totalAcknowledgeTime += acknowledgeTime
 					acknowledgedCount++
-					logc.Infof(ds.ctx.Ctx, "认领时间统计 - 事件: %s, 认领耗时: %d秒", 
-						event.Fingerprint, acknowledgeTime)
 				}
-			} else {
-				logc.Infof(ds.ctx.Ctx, "告警未认领或认领时间无效 - 指纹: %s, IsOk: %t, 认领时间: %d", 
-					event.Fingerprint, event.ConfirmState.IsOk, event.ConfirmState.ConfirmActionTime)
 			}
 			
 			// 计算MTTR（平均恢复时间）
@@ -156,13 +140,8 @@ func (ds dashboardStatisticsService) getWeekAlertStats(tenantId, faultCenterId s
 				if recoverTime > 0 {
 					totalRecoverTime += recoverTime
 					recoveredCount++
-					logc.Infof(ds.ctx.Ctx, "恢复时间统计 - 事件: %s, 恢复耗时: %d秒", 
-						event.Fingerprint, recoverTime)
 				}
 			}
-		} else {
-			logc.Infof(ds.ctx.Ctx, "告警不在统计时间范围内 - 指纹: %s, 首次触发: %d, 统计范围: %d-%d", 
-				event.Fingerprint, event.FirstTriggerTime, startTime, endTime)
 		}
 	}
 	
@@ -242,8 +221,6 @@ type historyAlertStats struct {
 func (ds dashboardStatisticsService) getHistoryAlertStats(tenantId, faultCenterId string, startTime, endTime int64) *historyAlertStats {
 	stats := &historyAlertStats{}
 	
-	logc.Infof(ds.ctx.Ctx, "开始从历史数据库统计告警 - 租户: %s, 故障中心: %s", tenantId, faultCenterId)
-	
 	// 构建历史事件查询条件
 	query := types.RequestAlertHisEventQuery{
 		TenantId:      tenantId,
@@ -263,8 +240,6 @@ func (ds dashboardStatisticsService) getHistoryAlertStats(tenantId, faultCenterI
 		return stats
 	}
 	
-	logc.Infof(ds.ctx.Ctx, "从数据库获取到 %d 个历史告警事件", len(historyEvents.List))
-	
 	// 遍历历史事件进行统计
 	for _, event := range historyEvents.List {
 		// 检查事件是否在统计时间范围内（双重保险）
@@ -282,8 +257,6 @@ func (ds dashboardStatisticsService) getHistoryAlertStats(tenantId, faultCenterI
 				if acknowledgeTime > 0 {
 					stats.TotalAcknowledgeTime += acknowledgeTime
 					stats.AcknowledgedCount++
-					logc.Infof(ds.ctx.Ctx, "历史认领时间统计 - 事件: %s, 认领耗时: %d秒", 
-						event.Fingerprint, acknowledgeTime)
 				}
 			}
 			
@@ -293,15 +266,10 @@ func (ds dashboardStatisticsService) getHistoryAlertStats(tenantId, faultCenterI
 				if recoverTime > 0 {
 					stats.TotalRecoverTime += recoverTime
 					stats.RecoveredCount++
-					logc.Infof(ds.ctx.Ctx, "历史恢复时间统计 - 事件: %s, 恢复耗时: %d秒", 
-						event.Fingerprint, recoverTime)
 				}
 			}
 		}
 	}
-	
-	logc.Infof(ds.ctx.Ctx, "历史数据统计完成 - 总事件: %d, 主告警: %d, 已认领: %d, 已恢复: %d", 
-		stats.AllEvents, stats.MainAlerts, stats.AcknowledgedCount, stats.RecoveredCount)
 	
 	return stats
 }
