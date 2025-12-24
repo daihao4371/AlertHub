@@ -24,6 +24,7 @@ type InterUserRoleService interface {
 	GetRolePermissions(roleID string) ([]models.SysApi, error)               // 获取角色权限
 	CheckUserPermission(userID string, apiPath, method string) (bool, error) // 检查用户权限
 	GetUserRoles(userID string) ([]models.UserRole, error)                   // 获取用户角色列表
+	GetUserRolesInTenant(userID, tenantID string) ([]models.UserRole, error) // 在指定租户中获取用户角色列表
 }
 
 func newInterUserRoleService(ctx *ctx.Context) InterUserRoleService {
@@ -160,6 +161,37 @@ func (ur userRoleService) GetUserRoles(userID string) ([]models.UserRole, error)
 		if role.ID == user.Role && role.IsEnabled() {
 			userRoles = append(userRoles, role)
 			break // 用户只能有一个角色，找到后退出循环
+		}
+	}
+
+	return userRoles, nil
+}
+
+// GetUserRolesInTenant 在指定租户中获取用户角色列表
+func (ur userRoleService) GetUserRolesInTenant(userID, tenantID string) ([]models.UserRole, error) {
+	// 1. 通过租户用户关联表获取用户在该租户下的角色
+	tenantUserInfo, err := ur.ctx.DB.Tenant().GetTenantLinkedUserInfo(tenantID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("获取租户用户信息失败: %v", err)
+	}
+
+	// 2. 如果用户在该租户下没有分配角色，返回空列表
+	if tenantUserInfo.UserRole == "" {
+		return []models.UserRole{}, nil
+	}
+
+	// 3. 根据角色ID查询角色详细信息
+	allRoles, err := ur.ctx.DB.UserRole().List()
+	if err != nil {
+		return nil, fmt.Errorf("查询角色列表失败: %v", err)
+	}
+
+	// 4. 筛选出用户的角色并过滤启用状态
+	var userRoles []models.UserRole
+	for _, role := range allRoles {
+		if role.ID == tenantUserInfo.UserRole && role.IsEnabled() {
+			userRoles = append(userRoles, role)
+			break // 用户在一个租户下只能有一个角色
 		}
 	}
 
