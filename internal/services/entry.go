@@ -38,8 +38,9 @@ var (
 	QuickActionService      InterQuickActionService
 	ExporterMonitorService  InterExporterMonitorService
 	PrometheusProxyService  InterPrometheusProxyService
-	MetricsExplorerService  InterMetricsExplorerService
-	CasbinPermissionService InterCasbinService // 新增Casbin权限服务
+	MetricsExplorerService      InterMetricsExplorerService
+	CasbinPermissionService     InterCasbinService          // 新增Casbin权限服务
+	DashboardStatisticsService  InterDashboardStatisticsService // 首页统计服务
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -75,5 +76,6 @@ func NewServices(ctx *ctx.Context) {
 	ExporterMonitorService = newInterExporterMonitorService(ctx)
 	PrometheusProxyService = newInterPrometheusProxyService(ctx)
 	MetricsExplorerService = newInterMetricsExplorerService(ctx)
-	CasbinPermissionService = newInterCasbinService(ctx) // 初始化Casbin权限服务
+	CasbinPermissionService = newInterCasbinService(ctx)       // 初始化Casbin权限服务
+	DashboardStatisticsService = newDashboardStatisticsService(ctx) // 初始化首页统计服务
 }
