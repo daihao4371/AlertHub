@@ -48,21 +48,26 @@ func (ds dashboardStatisticsService) GetDashboardStatistics(req interface{}) (in
 	stats.TodayNewAlerts = todayStats.NewAlerts
 
 	// 获取过去7天与前7天统计数据，用于计算环比
+	// 注意：MTTA/MTTR 使用全局数据（所有故障中心），其他指标使用指定故障中心数据
 	weekStats := ds.getWeekAlertStats(r.TenantId, r.FaultCenterId, weekAgo.Unix(), now.Unix())
 	prevWeekStats := ds.getWeekAlertStats(r.TenantId, r.FaultCenterId, twoWeeksAgo.Unix(), weekAgo.Unix())
+	
+	// 获取全局MTTA/MTTR统计（所有故障中心）
+	globalWeekStats := ds.getGlobalWeekAlertStats(r.TenantId, weekAgo.Unix(), now.Unix())
+	globalPrevWeekStats := ds.getGlobalWeekAlertStats(r.TenantId, twoWeeksAgo.Unix(), weekAgo.Unix())
 
 	stats.Past7DaysAllEvents = weekStats.AllEvents
 	stats.Past7DaysMainAlerts = weekStats.MainAlerts
-	stats.Past7DaysMTTA = weekStats.MTTA
-	stats.Past7DaysMTTR = weekStats.MTTR
+	stats.Past7DaysMTTA = globalWeekStats.MTTA      // 使用全局MTTA
+	stats.Past7DaysMTTR = globalWeekStats.MTTR      // 使用全局MTTR
 
 	// 计算各项指标的环比增长率
 	stats.TodayMainAlertsCompareRatio = ds.calculateCompareRatio(float64(todayStats.MainAlerts), float64(yesterdayStats.MainAlerts))
 	stats.TodayNewAlertsCompareRatio = ds.calculateCompareRatio(float64(todayStats.NewAlerts), float64(yesterdayStats.NewAlerts))
 	stats.Past7DaysAllEventsCompareRatio = ds.calculateCompareRatio(float64(weekStats.AllEvents), float64(prevWeekStats.AllEvents))
 	stats.Past7DaysMainAlertsCompareRatio = ds.calculateCompareRatio(float64(weekStats.MainAlerts), float64(prevWeekStats.MainAlerts))
-	stats.Past7DaysMTTACompareRatio = ds.calculateCompareRatio(weekStats.MTTA, prevWeekStats.MTTA)
-	stats.Past7DaysMTTRCompareRatio = ds.calculateCompareRatio(weekStats.MTTR, prevWeekStats.MTTR)
+	stats.Past7DaysMTTACompareRatio = ds.calculateCompareRatio(globalWeekStats.MTTA, globalPrevWeekStats.MTTA)   // 使用全局MTTA环比
+	stats.Past7DaysMTTRCompareRatio = ds.calculateCompareRatio(globalWeekStats.MTTR, globalPrevWeekStats.MTTR)   // 使用全局MTTR环比
 
 	return stats, nil
 }
@@ -271,5 +276,82 @@ func (ds dashboardStatisticsService) getHistoryAlertStats(tenantId, faultCenterI
 		}
 	}
 	
+	return stats
+}
+
+// getGlobalWeekAlertStats 获取全局周统计数据（所有故障中心的MTTA和MTTR）
+// 用于计算跨故障中心的平均认领时间和恢复时间
+func (ds dashboardStatisticsService) getGlobalWeekAlertStats(tenantId string, startTime, endTime int64) *weekAlertStats {
+	stats := &weekAlertStats{}
+	
+	// 用于计算平均值的累计变量
+	var totalAcknowledgeTime int64 // 总认领时间
+	var totalRecoverTime int64     // 总恢复时间
+	var acknowledgedCount int64    // 已认领告警数量
+	var recoveredCount int64       // 已恢复告警数量
+
+	// 获取租户下所有故障中心
+	faultCenters, err := ds.ctx.DB.FaultCenter().List(tenantId, "")
+	if err != nil {
+		logc.Errorf(ds.ctx.Ctx, "获取故障中心列表失败: %s", err.Error())
+		return stats
+	}
+
+	// 遍历所有故障中心，统计MTTA/MTTR
+	for _, faultCenter := range faultCenters {
+		// 从Redis获取当前故障中心的告警事件
+		currentEvents, err := ds.ctx.Redis.Alert().GetAllEvents(models.BuildAlertEventCacheKey(tenantId, faultCenter.ID))
+		if err != nil {
+			continue // 忽略错误，继续处理下一个故障中心
+		}
+		
+		for _, event := range currentEvents {
+			// 检查事件是否在统计时间范围内
+			if event.FirstTriggerTime >= startTime && event.FirstTriggerTime <= endTime {
+				// 计算MTTA（平均认领时间）
+				if event.ConfirmState.IsOk && event.ConfirmState.ConfirmActionTime > 0 {
+					acknowledgeTime := event.ConfirmState.ConfirmActionTime - event.FirstTriggerTime
+					if acknowledgeTime > 0 {
+						totalAcknowledgeTime += acknowledgeTime
+						acknowledgedCount++
+					}
+				}
+				
+				// 计算MTTR（平均恢复时间）
+				if event.Status == models.StateRecovered && event.RecoverTime > 0 {
+					recoverTime := event.RecoverTime - event.FirstTriggerTime
+					if recoverTime > 0 {
+						totalRecoverTime += recoverTime
+						recoveredCount++
+					}
+				}
+			}
+		}
+		
+		// 从历史数据库获取该故障中心的已归档告警事件
+		historyStats := ds.getHistoryAlertStats(tenantId, faultCenter.ID, startTime, endTime)
+		
+		// 合并历史数据的统计结果
+		if historyStats.AcknowledgedCount > 0 {
+			totalAcknowledgeTime += historyStats.TotalAcknowledgeTime
+			acknowledgedCount += historyStats.AcknowledgedCount
+		}
+		
+		if historyStats.RecoveredCount > 0 {
+			totalRecoverTime += historyStats.TotalRecoverTime
+			recoveredCount += historyStats.RecoveredCount
+		}
+	}
+
+	// 计算全局平均认领时间（转换为分钟）
+	if acknowledgedCount > 0 {
+		stats.MTTA = float64(totalAcknowledgeTime) / float64(acknowledgedCount) / 60
+	}
+
+	// 计算全局平均恢复时间（转换为分钟）
+	if recoveredCount > 0 {
+		stats.MTTR = float64(totalRecoverTime) / float64(recoveredCount) / 60
+	}
+
 	return stats
 }
