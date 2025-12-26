@@ -1,5 +1,5 @@
-use alerthub;
-INSERT ignore INTO alerthub.rule_templates (
+use watchalert;
+INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -344,7 +344,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', '', 'reason', '', 'value', 0, 'filter', NULL, 'scope', 0),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -689,7 +689,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', '', 'reason', '', 'value', 0, 'filter', NULL, 'scope', 0),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -1030,7 +1030,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', 'HPA', 'reason', 'FailedGetResourceMetric', 'value', 1, 'filter', NULL, 'scope', 10),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -1356,7 +1356,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', 'Pods', 'reason', 'DeadlineExceeded', 'value', 1, 'filter', NULL, 'scope', 10),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -1697,7 +1697,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', '', 'reason', '', 'value', 0, 'filter', NULL, 'scope', 0),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -2043,7 +2043,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', '', 'reason', '', 'value', 0, 'filter', NULL, 'scope', 0),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,
@@ -2382,7 +2382,7 @@ INSERT ignore INTO alerthub.rule_templates (
         JSON_OBJECT('service', '', 'scope', 0, 'tags', ''),
         JSON_OBJECT('resource', '', 'reason', '', 'value', 0, 'filter', NULL, 'scope', 0),
         JSON_OBJECT('index', '', 'scope', 0, 'filter', NULL)
-    );INSERT ignore INTO alerthub.rule_templates (
+    );INSERT ignore INTO watchalert.rule_templates (
     rule_group_name,
     rule_name,
     datasource_type,

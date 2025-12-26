@@ -1,9 +1,9 @@
-{{/* Common helpers for alerthub chart */}}
-{{- define "alerthub.name" -}}
+{{/* Common helpers for watchalert chart */}}
+{{- define "watchalert.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "alerthub.fullname" -}}
+{{- define "watchalert.fullname" -}}
 {{- if .Values.fullnameOverride -}}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
 {{- else -}}
@@ -11,31 +11,31 @@
 {{- end -}}
 {{- end -}}
 
-{{- define "alerthub.chart" -}}
+{{- define "watchalert.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
-{{- define "alerthub.labels" -}}
-{{ include "alerthub.selectorLabels" . }}
+{{- define "watchalert.labels" -}}
+{{ include "watchalert.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
-{{- define "alerthub.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "alerthub.name" . }}
+{{- define "watchalert.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "watchalert.name" . }}
 {{- end }}
 
-{{- define "alerthub.serviceAccountName" -}}
+{{- define "watchalert.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create -}}
-{{- default (include "alerthub.fullname" .) .Values.serviceAccount.name -}}
+{{- default (include "watchalert.fullname" .) .Values.serviceAccount.name -}}
 {{- else -}}
 {{- default "default" .Values.serviceAccount.name -}}
 {{- end -}}
 {{- end -}}
 
 {{/* Build a component-scoped name like <fullname>-<component> */}}
-{{- define "alerthub.componentName" -}}
+{{- define "watchalert.componentName" -}}
 {{- printf "%s-%s" .root.Release.Name .component | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
