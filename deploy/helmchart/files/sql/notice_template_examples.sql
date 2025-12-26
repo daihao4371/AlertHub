@@ -1,5 +1,5 @@
-use watchalert;
-INSERT ignore INTO watchalert.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
+use alerthub;
+INSERT ignore INTO alerthub.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
 	 ('nt-cqh3uppd6gvj2ctaqd60','飞书通知模版','发送飞书的普通消息模版','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
 【报警中】- WatchAlert 业务系统 🔥
@@ -669,7 +669,7 @@ green
 {{- define "Footer" -}}
 🧑‍💻 WatchAlert - 运维团队
 {{- end }}',0,'','','FeiShu');
-INSERT INTO watchalert.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
+INSERT INTO alerthub.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
 ('nt-dingding-actioncard-001','钉钉快捷操作卡片模版','支持快捷操作按钮的钉钉 ActionCard 消息模板（认领/静默/查看详情）','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
 【报警中】- WatchAlert 业务系统 🔥
@@ -727,7 +727,7 @@ green
 {{- define "Footer" -}}
 🧑‍💻 WatchAlert - 运维团队
 {{- end }}',0,'','','DingDing');
-INSERT INTO watchalert.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
+INSERT INTO alerthub.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
 ('nt-feishu-actioncard-001','飞书快捷操作卡片模版','支持快捷操作按钮的飞书消息卡片模板（认领/静默/查看详情）','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
 【报警中】- WatchAlert 业务系统 🔥

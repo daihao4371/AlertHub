@@ -7,8 +7,8 @@ imagePullPolicy: IfNotPresent
 
 service:
   image:
-    repository: docker.1ms.run/cairry/alerthub
-    tag: "latest"
+    repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/alerthub
+    tag: "v1.2.0"
 
   resources:
     requests:
