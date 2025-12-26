@@ -200,17 +200,18 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 	}
 
 	err := sender.Tester(n.ctx, sender.SendParams{
-		NoticeType: r.NoticeType,
-		NoticeName: r.Name, // 传递通知对象名称，用于识别关键词
-		Hook:       r.DefaultHook,
-		Email:      r.Email,
-		Sign:       r.DefaultSign,
+		NoticeType:  r.NoticeType,
+		NoticeName:  r.Name, // 传递通知对象名称，用于识别关键词
+		Hook:        r.DefaultHook,
+		Email:       r.Email,
+		Sign:        r.DefaultSign,
+		PhoneNumber: r.PhoneNumber,
 	})
 	if err != nil {
 		errList = append(errList, struct {
 			Hook  string
 			Error string
-		}{Hook: r.DefaultHook, Error: err.Error()})
+		}{Hook: "config-masked", Error: err.Error()})
 	}
 
 	for _, route := range r.Routes {
@@ -228,7 +229,7 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 			errList = append(errList, struct {
 				Hook  string
 				Error string
-			}{Hook: route.Hook, Error: err.Error()})
+			}{Hook: "route-config-masked", Error: err.Error()})
 		}
 	}
 

@@ -99,6 +99,8 @@ func senderFactory(noticeType string) (SendInter, error) {
 		return NewPhoneCallSender(), nil
 	case "Slack":
 		return NewSlackSender(), nil
+	case "SMS":
+		return NewSmsSender(), nil
 	default:
 		return nil, fmt.Errorf("无效的通知类型: %s", noticeType)
 	}
