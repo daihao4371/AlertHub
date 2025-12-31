@@ -104,73 +104,9 @@ func (pt *ProcessTrace) GetTotalDuration() int64 {
 	return 0
 }
 
-// GetCompletedStepsCount 获取已完成步骤数量
-func (pt *ProcessTrace) GetCompletedStepsCount() int {
-	count := 0
-	for _, step := range pt.ProcessSteps {
-		if step.IsCompleted {
-			count++
-		}
-	}
-	return count
-}
 
-// GetCurrentStepName 获取当前处理步骤名称
-func (pt *ProcessTrace) GetCurrentStepName() string {
-	for _, step := range pt.ProcessSteps {
-		if !step.IsCompleted {
-			return step.StepName
-		}
-	}
-	return "已完成"
-}
 
-// AddProcessStep 添加处理步骤
-func (pt *ProcessTrace) AddProcessStep(stepName, description, assignedUser string) {
-	step := ProcessStep{
-		StepName:     stepName,
-		Status:       ProcessStatusProcessing,
-		StartTime:    time.Now().Unix(),
-		Description:  description,
-		AssignedUser: assignedUser,
-		IsCompleted:  false,
-	}
-	pt.ProcessSteps = append(pt.ProcessSteps, step)
-	pt.UpdatedAt = time.Now().Unix()
-}
 
-// CompleteProcessStep 完成处理步骤
-func (pt *ProcessTrace) CompleteProcessStep(stepName, notes string) error {
-	now := time.Now().Unix()
-
-	for i := range pt.ProcessSteps {
-		if pt.ProcessSteps[i].StepName == stepName && !pt.ProcessSteps[i].IsCompleted {
-			pt.ProcessSteps[i].IsCompleted = true
-			pt.ProcessSteps[i].EndTime = now
-			pt.ProcessSteps[i].Duration = now - pt.ProcessSteps[i].StartTime
-			pt.ProcessSteps[i].Notes = notes
-			pt.UpdatedAt = now
-
-			// 检查是否所有步骤都完成
-			allCompleted := true
-			for _, step := range pt.ProcessSteps {
-				if !step.IsCompleted {
-					allCompleted = false
-					break
-				}
-			}
-
-			if allCompleted {
-				pt.CurrentStatus = ProcessStatusCompleted
-				pt.EndTime = now
-			}
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf("未找到名为 %s 的未完成步骤", stepName)
-}
 
 // UpdateAIAnalysis 更新AI分析结果
 func (pt *ProcessTrace) UpdateAIAnalysis(stepName string, analysisData *AIAnalysisData) error {

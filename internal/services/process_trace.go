@@ -34,14 +34,9 @@ type (
 		// 获取处理流程追踪记录列表
 		GetProcessTraceList(tenantId, eventId, faultCenterId string, page, pageSize int) (*types.ProcessTraceListResponse, error)
 
-		// 更新处理状态
-		UpdateProcessStatus(tenantId, eventId, operator string, status models.ProcessTraceStatus) error
+		// 更新处理状态（集成分配处理人功能）
+		UpdateProcessStatus(tenantId, eventId, operator string, status models.ProcessTraceStatus, assignedUser, description string) error
 
-		// 添加处理步骤
-		AddProcessStep(tenantId, eventId, stepName, description, assignedUser, operator string) error
-
-		// 完成处理步骤
-		CompleteProcessStep(tenantId, eventId, stepName, notes, operator string) error
 
 		// 更新AI分析结果
 		UpdateAIAnalysis(tenantId, eventId, stepName string, analysisData *models.AIAnalysisData) error
@@ -313,7 +308,7 @@ func (pts *processTraceService) getStatusChineseName(status models.ProcessTraceS
 }
 
 // UpdateProcessStatus 更新处理状态
-func (pts *processTraceService) UpdateProcessStatus(tenantId, eventId, operator string, status models.ProcessTraceStatus) error {
+func (pts *processTraceService) UpdateProcessStatus(tenantId, eventId, operator string, status models.ProcessTraceStatus, assignedUser, description string) error {
 	var processTrace models.ProcessTrace
 	err := pts.db.Where("tenant_id = ? AND event_id = ?", tenantId, eventId).First(&processTrace).Error
 	if err != nil {
@@ -327,7 +322,15 @@ func (pts *processTraceService) UpdateProcessStatus(tenantId, eventId, operator 
 	}
 
 	oldStatus := processTrace.CurrentStatus
+	
+	// 如果没有指定分配处理人，默认为当前操作人
+	if assignedUser == "" {
+		assignedUser = operator
+	}
+	
+	// 更新状态和分配处理人
 	processTrace.CurrentStatus = status
+	processTrace.AssignedUser = assignedUser
 	processTrace.UpdatedAt = time.Now().Unix()
 
 	// 如果转换到完成状态，设置结束时间
@@ -346,66 +349,24 @@ func (pts *processTraceService) UpdateProcessStatus(tenantId, eventId, operator 
 	
 	// 构建操作描述，包含警告信息（如果有）
 	operationDesc := fmt.Sprintf("更新处理状态从 %s 到 %s", oldStatusCN, newStatusCN)
+	if assignedUser != operator {
+		operationDesc += fmt.Sprintf("，分配给: %s", assignedUser)
+	}
+	if description != "" {
+		operationDesc += fmt.Sprintf("，说明: %s", description)
+	}
 	if warning != "" {
 		operationDesc += fmt.Sprintf("。系统提醒: %s", warning)
 	}
 	
 	_ = pts.LogOperation(tenantId, eventId, processTrace.ID, "update_status",
 		operationDesc, operator, // 使用实际操作用户
-		map[string]interface{}{"status": oldStatus},
-		map[string]interface{}{"status": status}, "", "")
+		map[string]interface{}{"status": oldStatus, "assignedUser": processTrace.AssignedUser},
+		map[string]interface{}{"status": status, "assignedUser": assignedUser, "description": description}, "", "")
 
 	return nil
 }
 
-// AddProcessStep 添加处理步骤
-func (pts *processTraceService) AddProcessStep(tenantId, eventId, stepName, description, assignedUser, operator string) error {
-	var processTrace models.ProcessTrace
-	err := pts.db.Where("tenant_id = ? AND event_id = ?", tenantId, eventId).First(&processTrace).Error
-	if err != nil {
-		return fmt.Errorf("未找到处理流程追踪记录: %v", err)
-	}
-
-	processTrace.AddProcessStep(stepName, description, assignedUser)
-
-	err = pts.db.Save(&processTrace).Error
-	if err != nil {
-		return fmt.Errorf("添加处理步骤失败: %v", err)
-	}
-
-	// 记录操作日志 - operator是添加步骤的操作人，assignedUser是被分配的执行人
-	_ = pts.LogOperation(tenantId, eventId, processTrace.ID, "add_step",
-		fmt.Sprintf("添加处理步骤: %s，分配给: %s", stepName, assignedUser), operator, nil,
-		map[string]interface{}{"stepName": stepName, "description": description, "assignedUser": assignedUser}, "", "")
-
-	return nil
-}
-
-// CompleteProcessStep 完成处理步骤
-func (pts *processTraceService) CompleteProcessStep(tenantId, eventId, stepName, notes, operator string) error {
-	var processTrace models.ProcessTrace
-	err := pts.db.Where("tenant_id = ? AND event_id = ?", tenantId, eventId).First(&processTrace).Error
-	if err != nil {
-		return fmt.Errorf("未找到处理流程追踪记录: %v", err)
-	}
-
-	err = processTrace.CompleteProcessStep(stepName, notes)
-	if err != nil {
-		return err
-	}
-
-	err = pts.db.Save(&processTrace).Error
-	if err != nil {
-		return fmt.Errorf("完成处理步骤失败: %v", err)
-	}
-
-	// 记录操作日志
-	_ = pts.LogOperation(tenantId, eventId, processTrace.ID, "complete_step",
-		fmt.Sprintf("完成处理步骤: %s", stepName), operator, nil, // 使用实际操作用户
-		map[string]interface{}{"stepName": stepName, "notes": notes}, "", "")
-
-	return nil
-}
 
 // UpdateAIAnalysis 更新AI分析结果
 func (pts *processTraceService) UpdateAIAnalysis(tenantId, eventId, stepName string, analysisData *models.AIAnalysisData) error {

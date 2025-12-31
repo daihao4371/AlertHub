@@ -6,24 +6,12 @@ import "alertHub/internal/models"
 
 // UpdateProcessStatusRequest 更新处理状态请求
 type UpdateProcessStatusRequest struct {
-	EventId string `json:"eventId" binding:"required"` // 告警事件ID
-	Status  string `json:"status" binding:"required"`  // 新状态
-}
-
-// AddProcessStepRequest 添加处理步骤请求
-type AddProcessStepRequest struct {
 	EventId      string `json:"eventId" binding:"required"`      // 告警事件ID
-	StepName     string `json:"stepName" binding:"required"`     // 步骤名称
-	Description  string `json:"description" binding:"required"`  // 步骤描述
-	AssignedUser string `json:"assignedUser"`                    // 分配处理人
+	Status       string `json:"status" binding:"required"`       // 新状态
+	AssignedUser string `json:"assignedUser"`                    // 分配处理人（可选，不填默认为当前操作人）
+	Description  string `json:"description"`                     // 步骤描述（可选，描述本次状态更新的内容）
 }
 
-// CompleteProcessStepRequest 完成处理步骤请求
-type CompleteProcessStepRequest struct {
-	EventId  string `json:"eventId" binding:"required"`  // 告警事件ID
-	StepName string `json:"stepName" binding:"required"` // 步骤名称
-	Notes    string `json:"notes"`                       // 备注信息
-}
 
 // UpdateAIAnalysisRequest 更新AI分析结果请求
 type UpdateAIAnalysisRequest struct {

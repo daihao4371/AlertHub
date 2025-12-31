@@ -33,8 +33,6 @@ func (processTraceController processTraceController) API(gin *gin.RouterGroup) {
 		processTrace.GET("", processTraceController.GetProcessTrace)
 		processTrace.GET("list", processTraceController.GetProcessTraceList)
 		processTrace.PUT("status", processTraceController.UpdateProcessStatus)
-		processTrace.POST("step", processTraceController.AddProcessStep)
-		processTrace.PUT("step/complete", processTraceController.CompleteProcessStep)
 		processTrace.PUT("ai-analysis", processTraceController.UpdateAIAnalysis)
 		processTrace.GET("operation-logs", processTraceController.GetOperationLogs)
 		processTrace.GET("statistics", processTraceController.GetProcessStatistics)
@@ -113,12 +111,13 @@ func (processTraceController processTraceController) UpdateProcessStatus(ctx *gi
 
 	tid, _ := ctx.Get("TenantID")
 	tenantId := tid.(string)
-	
+
 	// 获取当前操作用户 - 使用tools.GetUser从token中获取用户名
 	username := tools.GetUser(ctx.Request.Header.Get("Authorization"))
 
 	Service(ctx, func() (interface{}, interface{}) {
-		err := services.ProcessTraceService.UpdateProcessStatus(tenantId, r.EventId, username, models.ProcessTraceStatus(r.Status))
+		err := services.ProcessTraceService.UpdateProcessStatus(tenantId, r.EventId, username,
+			models.ProcessTraceStatus(r.Status), r.AssignedUser, r.Description)
 		if err != nil {
 			// 检查是否是状态转换验证错误，提供更友好的错误信息
 			if strings.Contains(err.Error(), "状态转换验证失败") {
@@ -130,65 +129,6 @@ func (processTraceController processTraceController) UpdateProcessStatus(ctx *gi
 	})
 }
 
-// AddProcessStep 添加处理步骤
-// @Summary 添加处理步骤
-// @Tags ProcessTrace
-// @Accept json
-// @Produce json
-// @Param data body types.AddProcessStepRequest true "请求参数"
-// @Success 200 {object} response.Response
-// @Router /api/v1/process-trace/step [post]
-func (processTraceController processTraceController) AddProcessStep(ctx *gin.Context) {
-	r := new(types.AddProcessStepRequest)
-	BindJson(ctx, r)
-
-	tid, _ := ctx.Get("TenantID")
-	tenantId := tid.(string)
-
-	// 获取当前操作用户（添加步骤的人）
-	operator := tools.GetUser(ctx.Request.Header.Get("Authorization"))
-	
-	// 确定被分配的执行人
-	assignedUser := r.AssignedUser
-	if assignedUser == "" {
-		assignedUser = operator // 如果没有指定分配人，默认分配给操作人自己
-	}
-
-	Service(ctx, func() (interface{}, interface{}) {
-		err := services.ProcessTraceService.AddProcessStep(tenantId, r.EventId, r.StepName, r.Description, assignedUser, operator)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	})
-}
-
-// CompleteProcessStep 完成处理步骤
-// @Summary 完成处理步骤
-// @Tags ProcessTrace
-// @Accept json
-// @Produce json
-// @Param data body types.CompleteProcessStepRequest true "请求参数"
-// @Success 200 {object} response.Response
-// @Router /api/v1/process-trace/step/complete [put]
-func (processTraceController processTraceController) CompleteProcessStep(ctx *gin.Context) {
-	r := new(types.CompleteProcessStepRequest)
-	BindJson(ctx, r)
-
-	tid, _ := ctx.Get("TenantID")
-	tenantId := tid.(string)
-	
-	// 获取当前操作用户
-	username := tools.GetUser(ctx.Request.Header.Get("Authorization"))
-
-	Service(ctx, func() (interface{}, interface{}) {
-		err := services.ProcessTraceService.CompleteProcessStep(tenantId, r.EventId, r.StepName, r.Notes, username)
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	})
-}
 
 // UpdateAIAnalysis 更新AI分析结果
 // @Summary 更新AI分析结果
