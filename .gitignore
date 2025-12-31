@@ -20,6 +20,7 @@ web/.next
 web/
 package-lock.json
 package.json
+final-complete-preview.html
 
 # 推送脚本（仅本地使用）
 push-backend.sh
