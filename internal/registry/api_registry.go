@@ -241,6 +241,16 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/role/checkUserPermission", "POST", "检查用户权限", "角色管理"},
 		{"/api/w8t/role/getUserRoles", "GET", "获取用户角色", "角色管理"},
 		{"/api/w8t/role/roleList", "GET", "获取角色列表", "角色管理"},
+
+		// 处理流程追踪
+		{"/api/w8t/process-trace", "GET", "获取处理流程追踪记录", "处理流程追踪"},
+		{"/api/w8t/process-trace/list", "GET", "获取处理流程追踪记录列表", "处理流程追踪"},
+		{"/api/w8t/process-trace/status", "PUT", "更新处理状态", "处理流程追踪"},
+		{"/api/w8t/process-trace/step", "POST", "添加处理步骤", "处理流程追踪"},
+		{"/api/w8t/process-trace/step/complete", "PUT", "完成处理步骤", "处理流程追踪"},
+		{"/api/w8t/process-trace/ai-analysis", "PUT", "更新AI分析结果", "处理流程追踪"},
+		{"/api/w8t/process-trace/operation-logs", "GET", "获取操作日志列表", "处理流程追踪"},
+		{"/api/w8t/process-trace/statistics", "GET", "获取流程统计数据", "处理流程追踪"},
 	}
 }
 
