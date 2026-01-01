@@ -64,6 +64,92 @@ func NewInterProcessTraceService(ctx *ctx.Context) InterProcessTraceService {
 	}
 }
 
+// getFaultCenters 获取租户下的所有故障中心
+func (pts *processTraceService) getFaultCenters(tenantId string) ([]models.FaultCenter, error) {
+	var faultCenters []models.FaultCenter
+	err := pts.db.Where("tenant_id = ?", tenantId).Find(&faultCenters).Error
+	return faultCenters, err
+}
+
+// resolveEventIdFromFingerprint 将指纹转换为事件ID，使用多种回退方法
+func (pts *processTraceService) resolveEventIdFromFingerprint(tenantId, fingerprint string) (string, error) {
+	// 方法1: 从Redis缓存中查找fingerprint对应的eventId
+	faultCenters, err := pts.getFaultCenters(tenantId)
+	if err == nil {
+		for _, fc := range faultCenters {
+			// 尝试从缓存中获取事件
+			event, err := pts.ctx.Redis.Alert().GetEventFromCache(tenantId, fc.ID, fingerprint)
+			if err == nil && event.EventId != "" && event.EventId != fingerprint {
+				return event.EventId, nil
+			}
+		}
+	}
+
+	// 方法2: 数据库查找作为兜底
+	var alertEvent models.AlertCurEvent
+	err = pts.db.Table("alert_cur_events").Where("tenant_id = ? AND fingerprint = ?", tenantId, fingerprint).First(&alertEvent).Error
+	if err == nil && alertEvent.EventId != fingerprint {
+		return alertEvent.EventId, nil
+	}
+
+	// 如果都找不到，返回错误
+	return "", fmt.Errorf("无法将指纹 %s 转换为事件ID", fingerprint)
+}
+
+// searchEventInRedisCache 在Redis缓存中搜索事件，支持按eventId或指纹搜索
+func (pts *processTraceService) searchEventInRedisCache(tenantId, searchValue string, searchByEventId bool) (eventId, ruleId, ruleName string, found bool) {
+	faultCenters, err := pts.getFaultCenters(tenantId)
+	if err != nil {
+		return "", "", "", false
+	}
+
+	for _, fc := range faultCenters {
+		events, err := pts.ctx.Redis.Alert().GetAllEvents(models.BuildAlertEventCacheKey(tenantId, fc.ID))
+		if err != nil {
+			continue
+		}
+
+		for fingerprint, event := range events {
+			if searchByEventId {
+				// 按eventId搜索，返回规则信息
+				if event.EventId == searchValue && event.RuleName != "" {
+					return event.EventId, event.RuleId, event.RuleName, true
+				}
+			} else {
+				// 按指纹搜索，检查eventId和指纹是否匹配
+				if event.EventId == searchValue && fingerprint == searchValue {
+					return event.EventId, event.RuleId, event.RuleName, true
+				}
+			}
+		}
+	}
+
+	return "", "", "", false
+}
+
+// isEventMatchFingerprint 检查事件ID是否匹配给定指纹
+func (pts *processTraceService) isEventMatchFingerprint(tenantId, eventId, targetFingerprint string) bool {
+	faultCenters, err := pts.getFaultCenters(tenantId)
+	if err != nil {
+		return false
+	}
+
+	for _, fc := range faultCenters {
+		events, err := pts.ctx.Redis.Alert().GetAllEvents(models.BuildAlertEventCacheKey(tenantId, fc.ID))
+		if err != nil {
+			continue
+		}
+
+		for fingerprint, event := range events {
+			if event.EventId == eventId && fingerprint == targetFingerprint {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // getRuleInfoFromEvent 从事件获取规则信息
 func (pts *processTraceService) getRuleInfoFromEvent(tenantId, eventId string) (ruleId string, ruleName string) {
 	// 方法1: 首先尝试通过eventId直接从历史事件表查询
@@ -85,22 +171,9 @@ func (pts *processTraceService) getRuleInfoFromEvent(tenantId, eventId string) (
 	}
 
 	// 方法3: 从Redis缓存中查找（主要数据源）
-	var faultCenters []models.FaultCenter
-	err = pts.db.Where("tenant_id = ?", tenantId).Find(&faultCenters).Error
-	if err == nil {
-		for _, fc := range faultCenters {
-			events, err := pts.ctx.Redis.Alert().GetAllEvents(models.BuildAlertEventCacheKey(tenantId, fc.ID))
-			if err != nil {
-				continue
-			}
-
-			// 遍历事件找到匹配的eventId
-			for _, event := range events {
-				if event.EventId == eventId && event.RuleName != "" {
-					return event.RuleId, event.RuleName
-				}
-			}
-		}
+	_, ruleId, ruleName, found := pts.searchEventInRedisCache(tenantId, eventId, true)
+	if found {
+		return ruleId, ruleName
 	}
 
 	// 如果都找不到，返回空值
@@ -188,35 +261,13 @@ func (pts *processTraceService) GetProcessTraceByFingerprint(tenantId, fingerpri
 		return processTrace, nil
 	}
 
-	// 方法2: 从Redis缓存中查找fingerprint对应的eventId
-	var targetEventId string
-
-	var faultCenters []models.FaultCenter
-	err = pts.db.Where("tenant_id = ?", tenantId).Find(&faultCenters).Error
+	// 方法2: 使用通用方法将fingerprint转换为eventId
+	eventId, err := pts.resolveEventIdFromFingerprint(tenantId, fingerprint)
 	if err == nil {
-		for _, fc := range faultCenters {
-			// 尝试从缓存中获取事件
-			event, err := pts.ctx.Redis.Alert().GetEventFromCache(tenantId, fc.ID, fingerprint)
-			if err == nil && event.EventId != "" && event.EventId != fingerprint {
-				targetEventId = event.EventId
-				break
-			}
-		}
+		return pts.GetProcessTrace(tenantId, eventId)
 	}
 
-	// 方法3: 如果找到了不同的eventId，用它查询
-	if targetEventId != "" {
-		return pts.GetProcessTrace(tenantId, targetEventId)
-	}
-
-	// 方法4: 数据库查找
-	var alertEvent models.AlertCurEvent
-	err = pts.db.Table("alert_cur_events").Where("tenant_id = ? AND fingerprint = ?", tenantId, fingerprint).First(&alertEvent).Error
-	if err == nil && alertEvent.EventId != fingerprint {
-		return pts.GetProcessTrace(tenantId, alertEvent.EventId)
-	}
-
-	// 方法5: 遍历ProcessTrace表，寻找可能的匹配
+	// 方法3: 遍历ProcessTrace表，寻找可能的匹配（兜底方法）
 	var processTraces []models.ProcessTrace
 	err = pts.db.Where("tenant_id = ?", tenantId).Find(&processTraces).Error
 	if err == nil {
@@ -236,31 +287,6 @@ func (pts *processTraceService) GetProcessTraceByFingerprint(tenantId, fingerpri
 	}
 
 	return nil, fmt.Errorf("未找到指纹为 %s 的告警事件", fingerprint)
-}
-
-// isEventMatchFingerprint 检查事件ID是否匹配给定指纹
-func (pts *processTraceService) isEventMatchFingerprint(tenantId, eventId, targetFingerprint string) bool {
-	// 从Redis缓存中查找事件
-	var faultCenters []models.FaultCenter
-	err := pts.db.Where("tenant_id = ?", tenantId).Find(&faultCenters).Error
-	if err != nil {
-		return false
-	}
-
-	for _, fc := range faultCenters {
-		events, err := pts.ctx.Redis.Alert().GetAllEvents(models.BuildAlertEventCacheKey(tenantId, fc.ID))
-		if err != nil {
-			continue
-		}
-
-		for fingerprint, event := range events {
-			if event.EventId == eventId && fingerprint == targetFingerprint {
-				return true
-			}
-		}
-	}
-
-	return false
 }
 
 // calculateProcessDurations 计算每个处理流程记录的总处理时长
@@ -432,35 +458,13 @@ func (pts *processTraceService) GetOperationLogsByFingerprint(tenantId, fingerpr
 		return logs, count, nil
 	}
 
-	// 方法2: 从Redis缓存中查找fingerprint对应的eventId
-	var targetEventId string
-
-	var faultCenters []models.FaultCenter
-	err = pts.db.Where("tenant_id = ?", tenantId).Find(&faultCenters).Error
+	// 方法2: 使用通用方法将fingerprint转换为eventId
+	eventId, err := pts.resolveEventIdFromFingerprint(tenantId, fingerprint)
 	if err == nil {
-		for _, fc := range faultCenters {
-			// 尝试从缓存中获取事件
-			event, err := pts.ctx.Redis.Alert().GetEventFromCache(tenantId, fc.ID, fingerprint)
-			if err == nil && event.EventId != "" && event.EventId != fingerprint {
-				targetEventId = event.EventId
-				break
-			}
-		}
+		return pts.GetOperationLogs(tenantId, eventId, page, pageSize)
 	}
 
-	// 方法3: 如果找到了不同的eventId，用它查询
-	if targetEventId != "" {
-		return pts.GetOperationLogs(tenantId, targetEventId, page, pageSize)
-	}
-
-	// 方法4: 数据库查找作为兜底
-	var alertEvent models.AlertCurEvent
-	err = pts.db.Table("alert_cur_events").Where("tenant_id = ? AND fingerprint = ?", tenantId, fingerprint).First(&alertEvent).Error
-	if err == nil && alertEvent.EventId != fingerprint {
-		return pts.GetOperationLogs(tenantId, alertEvent.EventId, page, pageSize)
-	}
-
-	// 如果都失败了，返回原始错误或空结果
+	// 如果都失败了，返回找不到的错误
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, 0, fmt.Errorf("未找到指纹为 %s 的告警事件", fingerprint)
 	}
