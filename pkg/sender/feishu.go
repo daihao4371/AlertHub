@@ -1,6 +1,7 @@
 package sender
 
 import (
+	"alertHub/internal/ctx"
 	"bytes"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -9,7 +10,6 @@ import (
 	"fmt"
 	"strconv"
 	"time"
-	"alertHub/internal/ctx"
 
 	"github.com/bytedance/sonic"
 	"github.com/zeromicro/go-zero/core/logc"
@@ -30,13 +30,6 @@ type (
 	}
 )
 
-var FeiShuTestContent = fmt.Sprintf(`{
-  "msg_type": "text",
-  "content": {
-  "text": "%s"
-  }
-}`, RobotTestContent)
-
 func NewFeiShuSender() SendInter {
 	return &FeiShuSender{}
 }
@@ -46,8 +39,16 @@ func (f *FeiShuSender) Send(params SendParams) error {
 }
 
 func (f *FeiShuSender) Test(params SendParams) error {
+	// 使用统一的测试消息常量，构建飞书 text 类型消息
+	testContent := fmt.Sprintf(`{
+  "msg_type": "text",
+  "content": {
+  "text": "%s"
+  }
+}`, RobotTestContent)
+
 	msg := make(map[string]any)
-	err := sonic.Unmarshal([]byte(FeiShuTestContent), &msg)
+	err := sonic.Unmarshal([]byte(testContent), &msg)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, fmt.Sprintf("发送的内容解析失败, err: %s", err.Error()))
 		return err

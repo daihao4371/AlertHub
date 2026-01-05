@@ -1,11 +1,10 @@
 package sender
 
 import (
+	"alertHub/pkg/tools"
 	"bytes"
 	"fmt"
 	"io"
-	"strings"
-	"alertHub/pkg/tools"
 
 	"github.com/bytedance/sonic"
 )
@@ -20,13 +19,6 @@ type (
 	}
 )
 
-var DingTestContent = fmt.Sprintf(`{
-	"msgtype": "text",
-    "text": {
-        "content": "%s"
-    }
-}`, RobotTestContent)
-
 func NewDingSender() SendInter {
 	return &DingDingSender{}
 }
@@ -36,61 +28,19 @@ func (d *DingDingSender) Send(params SendParams) error {
 }
 
 // getDingdingTestKeyword gets appropriate keyword for DingDing robot based on notice name
-// Uses a keyword mapping table for better maintainability and readability
 func getDingdingTestKeyword(noticeName string) string {
-	// Default keyword for most common DingDing robot configurations
-	defaultKeyword := "告警"
-
-	// Return default keyword if notice name is empty
-	if noticeName == "" {
-		return defaultKeyword
-	}
-
-	// Keyword mapping table - more maintainable than multiple if statements
-	// Priority: first match wins, so order matters for overlapping keywords
-	keywordMappings := []struct {
-		contains string
-		keyword  string
-	}{
-		{"报警", "报警"},     // Alert-related notifications
-		{"Alert", "Alert"}, // English alert notifications
-		{"监控", "监控"},     // Monitoring notifications
-		{"巡检", "巡检"},     // Inspection/health check notifications  
-		{"健康", "健康"},     // Health check notifications
-		{"报告", "报告"},     // Report notifications
-		{"测试", "测试"},     // Test notifications
-	}
-
-	// Check each keyword mapping in order
-	for _, mapping := range keywordMappings {
-		if strings.Contains(noticeName, mapping.contains) {
-			return mapping.keyword
-		}
-	}
-
-	return defaultKeyword
-}
-
-// buildDingdingTestContent 构建钉钉测试消息内容（包含关键词）
-func buildDingdingTestContent(noticeName string) string {
-	// 获取关键词
-	keyword := getDingdingTestKeyword(noticeName)
-
-	// 构建测试消息内容，确保包含关键词
-	testContent := fmt.Sprintf("%s %s", keyword, RobotTestContent)
-
-	// 构建JSON消息
-	return fmt.Sprintf(`{
-	"msgtype": "text",
-    "text": {
-        "content": "%s"
-    }
-}`, testContent)
+	// 统一使用 AlertHub 作为钉钉测试消息的关键词
+	return "AlertHub"
 }
 
 func (d *DingDingSender) Test(params SendParams) error {
-	// 动态生成测试消息内容，包含关键词
-	testContent := buildDingdingTestContent(params.NoticeName)
+	// 使用统一的测试消息常量，构建钉钉 text 类型消息
+	testContent := fmt.Sprintf(`{
+		"msgtype": "text",
+		"text": {
+			"content": "%s"
+		}
+	}`, RobotTestContent)
 	return d.post(params.Hook, testContent)
 }
 
