@@ -24,14 +24,19 @@ require (
 	github.com/go-ping/ping v1.1.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/google/uuid v1.6.0
+	github.com/influxdata/tdigest v0.0.1
 	github.com/jordan-wright/email v4.0.1-0.20210109023952-943e75fe5223+incompatible
+	github.com/lytics/anomalyzer v0.0.0-20151102000650-13cee1061701
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/montanaflynn/stats v0.7.1
 	github.com/olivere/elastic/v7 v7.0.32
+	github.com/panjf2000/ants/v2 v2.11.4
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/common v0.67.4
 	github.com/prometheus/prometheus v0.308.1
 	github.com/robfig/cron/v3 v3.0.1
 	github.com/rs/xid v1.5.0
+	github.com/sajari/regression v1.0.1
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/viper v1.16.0
 	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.3.21
@@ -40,6 +45,7 @@ require (
 	go.uber.org/multierr v1.11.0
 	golang.org/x/net v0.46.0
 	golang.org/x/sync v0.17.0
+	gonum.org/v1/gonum v0.16.0
 	gopkg.in/ldap.v2 v2.5.1
 	gopkg.in/yaml.v3 v3.0.1
 	gorm.io/driver/mysql v1.5.7
@@ -79,6 +85,7 @@ require (
 	github.com/aws/smithy-go v1.23.2 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
+	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bytedance/sonic/loader v0.3.0 // indirect
 	github.com/casbin/govaluate v1.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
@@ -86,6 +93,7 @@ require (
 	github.com/cloudwego/base64x v0.1.5 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dennwc/varint v1.0.0 // indirect
+	github.com/drewlanenga/govector v0.0.0-20220726163947-b958ac08bc93 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fatih/color v1.17.0 // indirect
@@ -97,6 +105,7 @@ require (
 	github.com/glebarez/sqlite v1.7.0 // indirect
 	github.com/go-faster/city v1.0.1 // indirect
 	github.com/go-faster/errors v0.7.1 // indirect
+	github.com/go-gota/gota v0.12.0 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect

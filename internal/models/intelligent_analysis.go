@@ -260,6 +260,21 @@ type PatternFeatures struct {
 	PatternStrength  float64                `json:"patternStrength"`  // 模式强度
 	PatternDetails   []PatternDetail        `json:"patternDetails"`   // 模式详情
 	CyclicalPatterns []CyclicalPattern      `json:"cyclicalPatterns"` // 周期性模式
+	
+	// 趋势特征
+	TrendType        string                 `json:"trendType"`        // 趋势类型: increasing/decreasing/stable
+	TrendStrength    float64                `json:"trendStrength"`    // 趋势强度
+	
+	// 季节性特征
+	SeasonalityType  string                 `json:"seasonalityType"`  // 季节性类型
+	SeasonalPeriod   int                    `json:"seasonalPeriod"`   // 季节性周期
+	
+	// 周期性特征
+	CyclicalType     string                 `json:"cyclicalType"`     // 周期类型
+	CyclePeriod      int64                  `json:"cyclePeriod"`      // 周期长度
+	
+	// 置信度
+	Confidence       float64                `json:"confidence"`       // 模式识别置信度
 }
 
 // PatternDetail 模式详情
@@ -284,9 +299,21 @@ type CyclicalPattern struct {
 // CorrelationFeatures 关联特征
 type CorrelationFeatures struct {
 	SelfCorrelation     float64                        `json:"selfCorrelation"`     // 自相关性
-	CrossCorrelations   map[string]float64             `json:"crossCorrelations"`   // 与其他指标的相关性
+	CrossCorrelations   map[string]*CorrelationInfo    `json:"crossCorrelations"`   // 与其他指标的相关性
 	LeadLagRelations    map[string]*LeadLagRelation    `json:"leadLagRelations"`    // 领先滞后关系
 	CausalRelations     map[string]*CausalRelation     `json:"causalRelations"`     // 因果关系
+	LagAnalysis         map[string]*LagAnalysisResult  `json:"lagAnalysis"`         // 滞后分析结果
+}
+
+// CorrelationInfo 相关性信息
+type CorrelationInfo struct {
+	TargetMetric    string  `json:"targetMetric"`    // 目标指标
+	Correlation     float64 `json:"correlation"`     // 相关系数
+	PValue          float64 `json:"pValue"`          // p值
+	Significance    string  `json:"significance"`    // 显著性级别
+	Method          string  `json:"method"`          // 计算方法
+	DataPoints      int     `json:"dataPoints"`      // 数据点数
+	Confidence      float64 `json:"confidence"`      // 置信度
 }
 
 // LeadLagRelation 领先滞后关系
@@ -477,6 +504,23 @@ type QualityControlConfig struct {
 	DataCompletenessThreshold float64 `json:"dataCompletenessThreshold"` // 数据完整性阈值
 	ValidationRules       []string `json:"validationRules"`      // 验证规则列表
 	FallbackOnFailure     bool    `json:"fallbackOnFailure"`     // 失败时是否降级
+}
+
+// LagAnalysisResult 滞后分析结果
+type LagAnalysisResult struct {
+	SourceMetric       string             `json:"sourceMetric"`       // 源指标名称
+	TargetMetric       string             `json:"targetMetric"`       // 目标指标名称
+	OptimalLag         int64              `json:"optimalLag"`         // 最优滞后时间(秒)
+	MaxCorrelation     float64            `json:"maxCorrelation"`     // 最大相关系数
+	Confidence         float64            `json:"confidence"`         // 置信度
+	LagType            string             `json:"lagType"`            // 滞后类型: positive/negative
+	Significance       string             `json:"significance"`       // 显著性: high/medium/low
+	Description        string             `json:"description"`        // 滞后关系描述
+	
+	// 兼容现有代码的字段
+	BestLag            int64              `json:"bestLag"`            // 别名: OptimalLag
+	BestCorrelation    float64            `json:"bestCorrelation"`    // 别名: MaxCorrelation
+	LagCorrelations    map[int64]float64  `json:"lagCorrelations"`    // 不同滞后的相关性
 }
 
 // AnalysisQualityMetrics 分析质量指标

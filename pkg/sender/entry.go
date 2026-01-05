@@ -1,9 +1,9 @@
 package sender
 
 import (
+	"alertHub/internal/ctx"
 	"fmt"
 	"time"
-	"alertHub/internal/ctx"
 
 	"github.com/bytedance/sonic"
 
@@ -45,7 +45,10 @@ type (
 	}
 )
 
-const RobotTestContent = "这是一条来自 AlertHub 的测试消息"
+const RobotTestContent = "🎉 AlertHub 告警通道配置成功！\n\n" +
+	"这是一条测试消息，用于验证告警通道是否可正常送达 ✅\n" +
+	"如您看到此消息，说明配置已生效，\n" +
+	"后续重要告警将第一时间通知您 🚀"
 
 // Sender 发送通知的主函数
 func Sender(ctx *ctx.Context, sendParams SendParams) error {
