@@ -1,12 +1,12 @@
 package api
 
 import (
-	"fmt"
 	"alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
 	"alertHub/pkg/response"
 	"alertHub/pkg/templates"
+	"fmt"
 
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +34,10 @@ func (q quickActionController) API(gin *gin.RouterGroup) {
 	// 快捷操作路由（需要登录验证）
 	authGroup := alert.Group("")
 	authGroup.Use(
+		middleware.Auth(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
+		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 		middleware.QuickActionAuth(),      // Token验证(验证操作合法性)
 		middleware.QuickActionLoginAuth(), // 登录验证(获取真实操作人,未登录则重定向)
 		middleware.ParseTenant(),

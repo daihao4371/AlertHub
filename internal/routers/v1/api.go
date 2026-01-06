@@ -50,6 +50,7 @@ func Router(engine *gin.Engine) {
 			api.PrometheusProxyController.API(w8t)
 			api.MetricsExplorerController.API(w8t)
 			api.CasbinPermissionController.API(w8t)
+			api.ProcessTraceController.API(w8t)
 		}
 
 		oidc := v1.Group("oidc")

@@ -358,23 +358,9 @@ func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.Not
 
 // getDingdingKeyword 获取钉钉关键词
 // 钉钉机器人如果配置了关键词验证，消息内容中必须包含关键词才能发送成功
-// 目前使用默认关键词"告警"，后续可以扩展为从通知对象配置中读取
+// 返回空字符串，不再添加关键词前缀
 func getDingdingKeyword(notice models2.AlertNotice) string {
-	// 默认关键词：告警（最常见的钉钉机器人关键词）
-	// 如果钉钉机器人配置了其他关键词（如"报警"、"Alert"等），
-	// 可以：
-	// 1. 在通知模板的标题或内容中包含该关键词
-	// 2. 或者后续添加配置项支持自定义关键词
-	defaultKeyword := "告警"
-
-	// 检查通知对象名称中是否包含关键词提示（可选）
-	// 例如：如果通知对象名称包含"报警"，则使用"报警"作为关键词
-	if strings.Contains(notice.Name, "报警") {
-		return "报警"
-	}
-	if strings.Contains(notice.Name, "Alert") {
-		return "Alert"
-	}
-
-	return defaultKeyword
+	// 不再添加关键词前缀，让消息内容更简洁
+	// 如果钉钉机器人需要关键词，建议在机器人设置中使用"自定义关键词"或"安全设置"的其他选项
+	return ""
 }

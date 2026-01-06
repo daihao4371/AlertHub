@@ -11,7 +11,8 @@ import (
 )
 
 type quickActionService struct {
-	ctx *ctx.Context
+	ctx                 *ctx.Context
+	processTraceService InterProcessTraceService // 处理流程追踪服务，用于自动创建处理记录
 }
 
 type InterQuickActionService interface {
@@ -29,7 +30,8 @@ type InterQuickActionService interface {
 
 func newInterQuickActionService(ctx *ctx.Context) InterQuickActionService {
 	return &quickActionService{
-		ctx: ctx,
+		ctx:                 ctx,
+		processTraceService: ProcessTraceService, // 注入已经初始化的ProcessTraceService实例
 	}
 }
 
@@ -58,6 +60,9 @@ func (q *quickActionService) ClaimAlert(tenantId, fingerprint, username, clientI
 	// 未接入故障中心的拨测告警暂不支持认领功能
 	if targetAlert.FaultCenterId != "" {
 		q.ctx.Redis.Alert().PushAlertEvent(targetAlert)
+		
+		// 自动创建处理流程追踪记录（异步执行，失败不影响主流程）
+		go q.autoCreateProcessTrace(tenantId, fingerprint, username, targetAlert)
 	} else {
 		// 未接入故障中心的告警不支持认领
 		return fmt.Errorf("该告警未接入故障中心，暂不支持认领功能")
@@ -178,6 +183,47 @@ func (q *quickActionService) GetAlertByFingerprint(tenantId, fingerprint string)
 }
 
 // ------------------------ 私有辅助方法 ------------------------
+
+// autoCreateProcessTrace 自动创建处理流程追踪记录
+// 当用户认领告警时自动调用，确保认领操作与处理流程追踪同步创建
+// 失败时仅记录错误，不影响主流程（认领操作）
+func (q *quickActionService) autoCreateProcessTrace(tenantId, fingerprint, username string, targetAlert *models.AlertCurEvent) {
+	// 防护性检查：确保processTraceService已正确初始化
+	if q.processTraceService == nil {
+		fmt.Printf("自动创建ProcessTrace失败: processTraceService未初始化, fingerprint=%s\n", fingerprint)
+		return
+	}
+
+	// 防护性检查：只有接入故障中心的告警才创建处理流程
+	if targetAlert.FaultCenterId == "" {
+		return
+	}
+
+	// 防护性检查：确保EventId存在
+	if targetAlert.EventId == "" {
+		fmt.Printf("自动创建ProcessTrace失败: 告警EventId为空, fingerprint=%s\n", fingerprint)
+		return
+	}
+
+	// 调用ProcessTraceService创建处理流程追踪记录
+	processTrace, err := q.processTraceService.CreateProcessTrace(
+		tenantId,
+		targetAlert.EventId,
+		targetAlert.FaultCenterId,
+		username, // 认领人作为处理负责人
+	)
+
+	if err != nil {
+		// 记录错误但不中断主流程（认领操作已成功）
+		fmt.Printf("自动创建ProcessTrace失败: %v, tenantId=%s, eventId=%s, fingerprint=%s\n", 
+			err, tenantId, targetAlert.EventId, fingerprint)
+		return
+	}
+
+	// 成功创建时记录日志
+	fmt.Printf("自动创建ProcessTrace成功: processId=%s, eventId=%s, fingerprint=%s, assignedUser=%s\n",
+		processTrace.ID, targetAlert.EventId, fingerprint, username)
+}
 
 // silenceAlert 静默告警的内部实现（避免代码重复）
 // 参数reason为空时，使用默认注释；否则追加自定义原因

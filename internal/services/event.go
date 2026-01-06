@@ -14,7 +14,8 @@ import (
 )
 
 type eventService struct {
-	ctx *ctx.Context
+	ctx                 *ctx.Context
+	processTraceService InterProcessTraceService // 处理流程追踪服务，用于自动创建处理记录
 }
 
 type InterEventService interface {
@@ -28,7 +29,8 @@ type InterEventService interface {
 
 func newInterEventService(ctx *ctx.Context) InterEventService {
 	return &eventService{
-		ctx: ctx,
+		ctx:                 ctx,
+		processTraceService: ProcessTraceService, // 注入已经初始化的ProcessTraceService实例
 	}
 }
 
@@ -54,6 +56,9 @@ func (e eventService) ProcessAlertEvent(req interface{}) (interface{}, interface
 			cache.ConfirmState.ConfirmActionTime = r.Time
 
 			e.ctx.Redis.Alert().PushAlertEvent(&cache)
+
+			// 自动创建处理流程追踪记录（异步执行，失败不影响主流程）
+			go e.autoCreateProcessTrace(r.TenantId, fingerprint, r.Username, &cache)
 
 			// 发送确认消息到群聊(异步，失败不影响主流程)
 			go func() {
@@ -285,4 +290,45 @@ func (e eventService) DeleteComment(req interface{}) (interface{}, interface{}) 
 	}
 
 	return "删除评论成功", nil
+}
+
+// autoCreateProcessTrace 自动创建处理流程追踪记录
+// 当用户从故障中心认领告警时自动调用，确保认领操作与处理流程追踪同步创建
+// 失败时仅记录错误，不影响主流程（认领操作）
+func (e *eventService) autoCreateProcessTrace(tenantId, fingerprint, username string, targetAlert *models.AlertCurEvent) {
+	// 防护性检查：确保processTraceService已正确初始化
+	if e.processTraceService == nil {
+		fmt.Printf("自动创建ProcessTrace失败: processTraceService未初始化, fingerprint=%s\n", fingerprint)
+		return
+	}
+
+	// 防护性检查：只有接入故障中心的告警才创建处理流程
+	if targetAlert.FaultCenterId == "" {
+		return
+	}
+
+	// 防护性检查：确保EventId存在
+	if targetAlert.EventId == "" {
+		fmt.Printf("自动创建ProcessTrace失败: 告警EventId为空, fingerprint=%s\n", fingerprint)
+		return
+	}
+
+	// 调用ProcessTraceService创建处理流程追踪记录
+	processTrace, err := e.processTraceService.CreateProcessTrace(
+		tenantId,
+		targetAlert.EventId,
+		targetAlert.FaultCenterId,
+		username, // 认领人作为处理负责人
+	)
+
+	if err != nil {
+		// 记录错误但不中断主流程（认领操作已成功）
+		fmt.Printf("自动创建ProcessTrace失败: %v, tenantId=%s, eventId=%s, fingerprint=%s\n", 
+			err, tenantId, targetAlert.EventId, fingerprint)
+		return
+	}
+
+	// 成功创建时记录日志
+	fmt.Printf("自动创建ProcessTrace成功: processId=%s, eventId=%s, fingerprint=%s, assignedUser=%s\n",
+		processTrace.ID, targetAlert.EventId, fingerprint, username)
 }

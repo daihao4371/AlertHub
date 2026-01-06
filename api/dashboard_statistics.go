@@ -17,9 +17,10 @@ var DashboardStatisticsController = new(dashboardStatisticsController)
 func (dashboardStatisticsController dashboardStatisticsController) API(gin *gin.RouterGroup) {
 	system := gin.Group("system")
 	system.Use(
-		middleware.Auth(),              // 用户认证中间件
-		middleware.CasbinPermission(),  // Casbin权限验证中间件
-		middleware.ParseTenant(),       // 租户解析中间件
+		middleware.Auth(),             // 用户认证中间件
+		middleware.CasbinPermission(), // Casbin权限验证中间件
+		middleware.ParseTenant(),      // 租户解析中间件
+		middleware.AuditingLog(),
 	)
 	{
 		// 获取首页统计数据的API端点
