@@ -248,7 +248,6 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/process-trace/status", "PUT", "更新处理状态（支持分配处理人和步骤添加）", "处理流程追踪"},
 		{"/api/w8t/process-trace/ai-analysis", "PUT", "更新AI分析结果", "处理流程追踪"},
 		{"/api/w8t/process-trace/operation-logs", "GET", "获取操作日志列表", "处理流程追踪"},
-		{"/api/w8t/process-trace/statistics", "GET", "获取流程统计数据", "处理流程追踪"},
 	}
 }
 
@@ -256,14 +255,14 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 func (r *ApiRegistry) RegisterToDatabase() error {
 	db := r.ctx.DB.DB()
 	endpoints := r.GetAllApiEndpoints()
-	
+
 	logc.Infof(r.ctx.Ctx, "开始注册 %d 个API接口到数据库", len(endpoints))
 
 	for _, endpoint := range endpoints {
 		// 检查API是否已存在
 		var existingApi models.SysApi
 		err := db.Where("path = ? AND method = ?", endpoint.Path, endpoint.Method).First(&existingApi).Error
-		
+
 		if err != nil {
 			// API不存在，创建新记录
 			newApi := models.SysApi{
@@ -273,14 +272,14 @@ func (r *ApiRegistry) RegisterToDatabase() error {
 				ApiGroup:    endpoint.Group,
 				Enabled:     tools.BoolPtr(true),
 			}
-			
+
 			if err := db.Create(&newApi).Error; err != nil {
-				logc.Errorf(r.ctx.Ctx, "创建API记录失败: %s [%s] %s - %v", 
+				logc.Errorf(r.ctx.Ctx, "创建API记录失败: %s [%s] %s - %v",
 					endpoint.Method, endpoint.Path, endpoint.Description, err)
 				continue
 			}
-			
-			logc.Infof(r.ctx.Ctx, "新增API: %s [%s] %s", 
+
+			logc.Infof(r.ctx.Ctx, "新增API: %s [%s] %s",
 				endpoint.Method, endpoint.Path, endpoint.Description)
 		} else {
 			// API已存在，根据需要更新描述和分组
@@ -293,14 +292,14 @@ func (r *ApiRegistry) RegisterToDatabase() error {
 				existingApi.ApiGroup = endpoint.Group
 				updated = true
 			}
-			
+
 			if updated {
 				if err := db.Save(&existingApi).Error; err != nil {
-					logc.Errorf(r.ctx.Ctx, "更新API记录失败: %s [%s] - %v", 
+					logc.Errorf(r.ctx.Ctx, "更新API记录失败: %s [%s] - %v",
 						endpoint.Method, endpoint.Path, err)
 					continue
 				}
-				logc.Infof(r.ctx.Ctx, "更新API: %s [%s] %s", 
+				logc.Infof(r.ctx.Ctx, "更新API: %s [%s] %s",
 					endpoint.Method, endpoint.Path, endpoint.Description)
 			}
 		}

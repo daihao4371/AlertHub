@@ -20,7 +20,9 @@ func (c *prometheusProxyController) API(gin *gin.RouterGroup) {
 	group := gin.Group("prometheus")
 	group.Use(
 		middleware.Auth(),
-		middleware.CasbinPermission(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
+		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		// PromQL 编辑器自动补全接口

@@ -1,12 +1,11 @@
 package process
 
 import (
-	"fmt"
-	"time"
 	"alertHub/alert/mute"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
-	"alertHub/pkg/analysis"
+	"fmt"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
@@ -165,12 +164,6 @@ func PushEventToFaultCenter(ctx *ctx.Context, event *models.AlertCurEvent) {
 
 	// 更新缓存
 	cache.Alert().PushAlertEvent(event)
-	
-	// 🧠 新增：触发智能分析
-	// 只有在新告警或状态变化时才触发智能分析
-	if !event.IsRecovered && (event.Status == models.StateAlerting || event.Status == models.StatePreAlert) {
-		analysis.TriggerIntelligentAnalysis(ctx, event)
-	}
 }
 
 // IsSilencedEvent 静默检查

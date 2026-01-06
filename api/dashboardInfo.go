@@ -19,7 +19,9 @@ func (dashboardInfoController dashboardInfoController) API(gin *gin.RouterGroup)
 	system := gin.Group("system")
 	system.Use(
 		middleware.Auth(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
 		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		system.GET("getDashboardInfo", dashboardInfoController.GetDashboardInfo)

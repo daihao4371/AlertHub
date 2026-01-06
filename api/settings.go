@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"alertHub/internal/middleware"
 	"alertHub/internal/models"
 	"alertHub/internal/services"
+	"github.com/gin-gonic/gin"
 )
 
 type settingsController struct{}
@@ -15,7 +15,8 @@ func (settingsController settingsController) API(gin *gin.RouterGroup) {
 	a := gin.Group("setting")
 	a.Use(
 		middleware.Auth(),
-		middleware.CasbinPermission(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
+		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
 	{

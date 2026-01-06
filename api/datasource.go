@@ -1,13 +1,6 @@
 package api
 
 import (
-	"encoding/base64"
-	"encoding/json"
-	"fmt"
-	"net/url"
-	"strconv"
-	"strings"
-	"time"
 	ctx2 "alertHub/internal/ctx"
 	"alertHub/internal/middleware"
 	"alertHub/internal/models"
@@ -15,6 +8,13 @@ import (
 	"alertHub/internal/types"
 	"alertHub/pkg/provider"
 	"alertHub/pkg/tools"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
+	"time"
 
 	"regexp"
 

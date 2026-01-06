@@ -19,13 +19,15 @@ func (c *metricsExplorerController) API(gin *gin.RouterGroup) {
 	group := gin.Group("metrics-explorer")
 	group.Use(
 		middleware.Auth(),
-		middleware.CasbinPermission(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
+		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		// 指标浏览器核心接口
-		group.GET("metrics", c.GetMetrics)                    // 分页获取指标列表
-		group.GET("categories", c.GetCategories)              // 获取指标分类
-		group.POST("query_range", c.QueryRangeEnhanced)       // 增强查询范围
+		group.GET("metrics", c.GetMetrics)              // 分页获取指标列表
+		group.GET("categories", c.GetCategories)        // 获取指标分类
+		group.POST("query_range", c.QueryRangeEnhanced) // 增强查询范围
 	}
 }
 

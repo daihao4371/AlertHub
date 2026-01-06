@@ -1,9 +1,10 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"alertHub/internal/global"
 	"alertHub/pkg/client"
+
+	"gorm.io/gorm"
 )
 
 type (
@@ -73,9 +74,9 @@ func (e *entryRepo) RuleTmpl() InterRuleTmplRepo     { return newRuleTmplInterfa
 func (e *entryRepo) RuleTmplGroup() InterRuleTmplGroupRepo {
 	return newRuleTmplGroupInterface(e.db, e.g)
 }
-func (e *entryRepo) Silence() InterSilenceRepo   { return newSilenceInterface(e.db, e.g) }
-func (e *entryRepo) User() InterUserRepo         { return newUserInterface(e.db, e.g) }
-func (e *entryRepo) UserRole() InterUserRoleRepo { return newUserRoleInterface(e.db, e.g) }
+func (e *entryRepo) Silence() InterSilenceRepo         { return newSilenceInterface(e.db, e.g) }
+func (e *entryRepo) User() InterUserRepo               { return newUserInterface(e.db, e.g) }
+func (e *entryRepo) UserRole() InterUserRoleRepo       { return newUserRoleInterface(e.db, e.g) }
 func (e *entryRepo) Setting() InterSettingRepo         { return newSettingRepoInterface(e.db, e.g) }
 func (e *entryRepo) Subscribe() InterSubscribeRepo     { return newInterSubscribeRepo(e.db, e.g) }
 func (e *entryRepo) Probing() InterProbingRepo         { return newProbingRepoInterface(e.db, e.g) }
