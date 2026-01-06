@@ -21,7 +21,8 @@ func (tenantController tenantController) API(gin *gin.RouterGroup) {
 	a := gin.Group("tenant")
 	a.Use(
 		middleware.Auth(),
-		middleware.CasbinPermission(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
+		middleware.ParseTenant(),
 		middleware.AuditingLog(),
 	)
 	{

@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/pkg/community/aws/cloudwatch/types"
+	"github.com/gin-gonic/gin"
 )
 
 type awsCloudWatchController struct{}
@@ -14,9 +14,10 @@ var AWSCloudWatchController = new(awsCloudWatchController)
 func (awsCloudWatchController awsCloudWatchController) API(gin *gin.RouterGroup) {
 	community := gin.Group("community")
 	community.Use(
-		middleware.Cors(),
 		middleware.Auth(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
 		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		cloudwatch := community.Group("cloudwatch")

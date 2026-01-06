@@ -1,10 +1,10 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	middleware "alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
+	"github.com/gin-gonic/gin"
 )
 
 type auditLogController struct{}
@@ -14,9 +14,10 @@ var AuditLogController = new(auditLogController)
 func (auditLogController auditLogController) API(gin *gin.RouterGroup) {
 	a := gin.Group("auditLog")
 	a.Use(
-		middleware.Cors(),
 		middleware.Auth(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
 		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		a.GET("listAuditLog", auditLogController.List)

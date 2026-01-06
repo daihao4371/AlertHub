@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"alertHub/internal/middleware"
 	"alertHub/internal/types"
+	"github.com/gin-gonic/gin"
 )
 
 type kubernetesTypesController struct{}
@@ -14,7 +14,9 @@ func (kubernetesTypesController kubernetesTypesController) API(gin *gin.RouterGr
 	k8s := gin.Group("kubernetes")
 	k8s.Use(
 		middleware.Auth(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
 		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		k8s.GET("getResourceList", kubernetesTypesController.getResourceList)

@@ -1,13 +1,13 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
-	"time"
 	"alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
 	"alertHub/pkg/response"
 	utils "alertHub/pkg/tools"
+	"github.com/gin-gonic/gin"
+	"time"
 )
 
 type alertEventController struct{}
@@ -22,8 +22,9 @@ func (alertEventController alertEventController) API(gin *gin.RouterGroup) {
 	a := gin.Group("event")
 	a.Use(
 		middleware.Auth(),
-		middleware.CasbinPermission(),
+		middleware.CasbinPermission(), // 使用Casbin权限中间件
 		middleware.ParseTenant(),
+		middleware.AuditingLog(),
 	)
 	{
 		a.POST("processAlertEvent", alertEventController.ProcessAlertEvent)

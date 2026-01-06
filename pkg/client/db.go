@@ -74,6 +74,11 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.ExporterReportSchedule{},
 		&models.ExporterInspection{},       // 新增: 巡检记录主表
 		&models.ExporterInspectionDetail{}, // 新增: 巡检明细表
+		&models.ProcessTrace{},             // 新增: 处理流程追踪表
+		&models.ProcessOperationLog{},      // 新增: 处理操作日志表
+		&models.IntelligentAnalysisConfig{},     // 新增: 智能分析配置表
+		&models.IntelligentAnalysisResult{},     // 新增: 智能分析结果表
+		&models.IntelligentAnalysisStatistics{}, // 新增: 智能分析统计表
 	)
 	if err != nil {
 		logc.Error(context.Background(), err.Error())
