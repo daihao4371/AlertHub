@@ -98,6 +98,8 @@ func senderFactory(noticeType string) (SendInter, error) {
 		return NewWeChatSender(), nil
 	case "CustomHook":
 		return NewWebHookSender(), nil
+	case "CMDB":
+		return NewCmdbSender(), nil
 	case "PhoneCall":
 		return NewPhoneCallSender(), nil
 	case "Slack":

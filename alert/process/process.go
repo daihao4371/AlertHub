@@ -206,7 +206,7 @@ func GetDutyUsers(ctx *ctx.Context, noticeData models.AlertNotice) []string {
 				us = append(us, fmt.Sprintf("@%s", user.DutyUserId))
 			}
 			return us
-		case "Email", "WeChat", "CustomHook":
+		case "Email", "WeChat", "CustomHook", "CMDB":
 			for _, user := range users {
 				us = append(us, fmt.Sprintf("@%s", user.UserName))
 			}
@@ -224,15 +224,6 @@ func GetDutyUsers(ctx *ctx.Context, noticeData models.AlertNotice) []string {
 
 // GetDutyUserPhoneNumber 获取当班人员手机号
 func GetDutyUserPhoneNumber(ctx *ctx.Context, noticeData models.AlertNotice) []string {
-	//user, ok := ctx.DB.DutyCalendar().GetDutyUserInfo(*noticeData.GetDutyId(), time.Now().Format("2006-1-2"))
-	//if ok {
-	//	switch noticeData.NoticeType {
-	//	case "PhoneCall":
-	//		if len(user.DutyUserId) > 1 {
-	//			return []string{user.Phone}
-	//		}
-	//	}
-	//}
 	return []string{}
 }
 

@@ -185,7 +185,7 @@ type WebhookContent struct {
 
 // generateAlertContent 生成告警内容
 func generateAlertContent(ctx *ctx.Context, alert *models.AlertCurEvent, noticeData models.AlertNotice) string {
-	if noticeData.NoticeType == "CustomHook" {
+	if noticeData.NoticeType == "CustomHook" || noticeData.NoticeType == "CMDB" {
 		users, ok := ctx.DB.DutyCalendar().GetDutyUserInfo(*noticeData.GetDutyId(), time.Now().Format("2006-1-2"))
 		if !ok || len(users) == 0 {
 			logc.Error(ctx.Ctx, "Failed to get duty users, noticeName: ", noticeData.Name)

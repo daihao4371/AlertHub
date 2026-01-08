@@ -146,7 +146,7 @@ func (m *ConsumeProbing) sendAlert(alert models.ProbingEvent) {
 }
 
 func (m *ConsumeProbing) getContent(alert models.ProbingEvent, noticeData models.AlertNotice) string {
-	if noticeData.NoticeType == "CustomHook" {
+	if noticeData.NoticeType == "CustomHook" || noticeData.NoticeType == "CMDB" {
 		return tools.JsonMarshalToString(alert)
 	} else {
 		return templates.NewTemplate(m.ctx, buildEvent(alert), noticeData).CardContentMsg
