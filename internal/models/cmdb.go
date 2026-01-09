@@ -1,0 +1,42 @@
+package models
+
+import "time"
+
+// CmdbHost CMDB主机表模型
+type CmdbHost struct {
+	ID        int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
+	IP        string    `gorm:"column:ip;type:varchar(50);not null;uniqueIndex:uk_ip" json:"ip"`
+	CreatedAt time.Time `gorm:"column:created_at;type:datetime;default:CURRENT_TIMESTAMP" json:"createdAt"`
+	UpdatedAt time.Time `gorm:"column:updated_at;type:datetime;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updatedAt"`
+}
+
+// TableName 指定表名
+func (CmdbHost) TableName() string {
+	return "cmdb_hosts"
+}
+
+// CmdbHostApplication CMDB主机应用关联表模型
+type CmdbHostApplication struct {
+	ID        int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
+	HostID    int64     `gorm:"column:host_id;type:bigint;not null;index:idx_host_id" json:"hostId"`
+	AppName   string    `gorm:"column:app_name;type:varchar(200);not null;index:idx_app_name" json:"appName"`
+	OpsOwner  *string   `gorm:"column:ops_owner;type:varchar(100);index:idx_ops_owner" json:"opsOwner"`
+	DevOwner  *string   `gorm:"column:dev_owner;type:varchar(100);index:idx_dev_owner" json:"devOwner"`
+	CreatedAt time.Time `gorm:"column:created_at;type:datetime;default:CURRENT_TIMESTAMP" json:"createdAt"`
+	UpdatedAt time.Time `gorm:"column:updated_at;type:datetime;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updatedAt"`
+}
+
+// TableName 指定表名
+func (CmdbHostApplication) TableName() string {
+	return "cmdb_host_applications"
+}
+
+// CmdbHostInfo CMDB主机信息（包含应用信息）
+// 用于返回查询结果，包含主机及其关联的应用信息
+type CmdbHostInfo struct {
+	HostID    int64    `json:"hostId"`    // 主机ID
+	IP        string   `json:"ip"`        // 主机IP
+	AppNames  []string `json:"appNames"`  // 应用名称列表
+	OpsOwners []string `json:"opsOwners"` // 运维负责人列表（去重）
+	DevOwners []string `json:"devOwners"` // 开发负责人列表（去重）
+}

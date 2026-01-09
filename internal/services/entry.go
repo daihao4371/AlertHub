@@ -42,6 +42,7 @@ var (
 	CasbinPermissionService    InterCasbinService              // 新增Casbin权限服务
 	DashboardStatisticsService InterDashboardStatisticsService // 首页统计服务
 	ProcessTraceService        InterProcessTraceService        // 处理流程追踪服务
+	CmdbService                InterCmdbService                 // CMDB服务
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -80,4 +81,5 @@ func NewServices(ctx *ctx.Context) {
 	MetricsExplorerService = newInterMetricsExplorerService(ctx)
 	CasbinPermissionService = newInterCasbinService(ctx)            // 初始化Casbin权限服务
 	DashboardStatisticsService = newDashboardStatisticsService(ctx) // 初始化首页统计服务
+	CmdbService = newInterCmdbService(ctx)                          // 初始化CMDB服务
 }

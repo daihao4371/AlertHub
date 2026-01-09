@@ -38,6 +38,7 @@ type (
 		Ai() InterAiRepo
 		Comment() InterCommentRepo
 		ExporterMonitor() InterExporterMonitorRepo
+		Cmdb() InterCmdbRepo
 	}
 )
 
@@ -85,4 +86,7 @@ func (e *entryRepo) Ai() InterAiRepo                   { return newAiRepoInterfa
 func (e *entryRepo) Comment() InterCommentRepo         { return newCommentInterface(e.db, e.g) }
 func (e *entryRepo) ExporterMonitor() InterExporterMonitorRepo {
 	return newExporterMonitorInterface(e.db, e.g)
+}
+func (e *entryRepo) Cmdb() InterCmdbRepo {
+	return newCmdbInterface(e.db, e.g)
 }

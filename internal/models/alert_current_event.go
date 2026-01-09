@@ -1,9 +1,9 @@
 package models
 
 import (
+	"alertHub/pkg/tools"
 	"fmt"
 	"time"
-	"alertHub/pkg/tools"
 )
 
 // AlertStatus 定义状态类型
@@ -49,9 +49,12 @@ type AlertCurEvent struct {
 	ConfirmState           ConfirmState           `json:"confirmState" gorm:"-"`
 	Status                 AlertStatus            `json:"status" gorm:"-"`      // 事件状态
 	SilenceInfo            *SilenceInfo           `json:"silenceInfo" gorm:"-"` // 静默信息
-	
+
+	// CMDB相关字段 (运行时缓存字段，不存储到数据库)
+	CmdbAppNames string `json:"cmdb_app_names" gorm:"-"` // CMDB关联应用名称（多个用逗号分隔）
+
 	// 智能分析相关字段 (运行时缓存字段，不存储到数据库)
-	IntelligentAnalysis    *AlertEventAnalysis    `json:"intelligentAnalysis,omitempty" gorm:"-"` // 智能分析状态和结果
+	IntelligentAnalysis *AlertEventAnalysis `json:"intelligentAnalysis,omitempty" gorm:"-"` // 智能分析状态和结果
 }
 
 // SilenceInfo 静默信息
