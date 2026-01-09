@@ -51,7 +51,9 @@ type AlertCurEvent struct {
 	SilenceInfo            *SilenceInfo           `json:"silenceInfo" gorm:"-"` // 静默信息
 
 	// CMDB相关字段 (运行时缓存字段，不存储到数据库)
-	CmdbAppNames string `json:"cmdb_app_names" gorm:"-"` // CMDB关联应用名称（多个用逗号分隔）
+	CmdbAppNames  string `json:"cmdb_app_names" gorm:"-"`  // CMDB关联应用名称（多个用逗号分隔）
+	CmdbOpsOwners string `json:"cmdb_ops_owners" gorm:"-"` // CMDB运维负责人（多个用逗号分隔）
+	CmdbDevOwners string `json:"cmdb_dev_owners" gorm:"-"` // CMDB开发负责人（多个用逗号分隔）
 
 	// 智能分析相关字段 (运行时缓存字段，不存储到数据库)
 	IntelligentAnalysis *AlertEventAnalysis `json:"intelligentAnalysis,omitempty" gorm:"-"` // 智能分析状态和结果

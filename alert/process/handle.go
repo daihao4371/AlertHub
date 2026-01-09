@@ -273,7 +273,21 @@ func enrichAlertWithCmdbInfo(ctx *ctx.Context, alert *models.AlertCurEvent) erro
 		alert.CmdbAppNames = appNamesStr
 	}
 
-	// 合并运维负责人和开发负责人作为值班人员
+	// 填充运维负责人信息
+	if len(hostInfo.OpsOwners) > 0 {
+		opsOwnersStr := strings.Join(hostInfo.OpsOwners, ", ")
+		alert.Labels["cmdb_ops_owners"] = opsOwnersStr
+		alert.CmdbOpsOwners = opsOwnersStr
+	}
+
+	// 填充开发负责人信息
+	if len(hostInfo.DevOwners) > 0 {
+		devOwnersStr := strings.Join(hostInfo.DevOwners, ", ")
+		alert.Labels["cmdb_dev_owners"] = devOwnersStr
+		alert.CmdbDevOwners = devOwnersStr
+	}
+
+	// 合并运维负责人和开发负责人作为值班人员（用于兼容现有逻辑）
 	allOwners := []string{}
 	allOwners = append(allOwners, hostInfo.OpsOwners...)
 	allOwners = append(allOwners, hostInfo.DevOwners...)
@@ -290,7 +304,7 @@ func enrichAlertWithCmdbInfo(ctx *ctx.Context, alert *models.AlertCurEvent) erro
 	}
 
 	if len(uniqueOwners) > 0 {
-		// 值班人员：多个负责人用逗号分隔
+		// 值班人员：多个负责人用逗号分隔（保留此字段用于兼容）
 		alert.Labels["cmdb_owners"] = strings.Join(uniqueOwners, ", ")
 	}
 

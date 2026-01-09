@@ -79,13 +79,28 @@ func (s *cmdbService) EnrichAlertWithCmdbInfo(alert *models.AlertCurEvent) error
 	}
 
 	// 填充CMDB信息到告警对象
-	// 将应用名称、运维负责人、开发负责人添加到Labels中，供模板使用
+	// 将应用名称添加到Labels和运行时字段中，供模板使用
 	if len(hostInfo.AppNames) > 0 {
-		// 关联应用：多个应用用逗号分隔
-		alert.Labels["cmdb_app_names"] = strings.Join(hostInfo.AppNames, ", ")
+		appNamesStr := strings.Join(hostInfo.AppNames, ", ")
+		alert.Labels["cmdb_app_names"] = appNamesStr
+		alert.CmdbAppNames = appNamesStr
 	}
 
-	// 合并运维负责人和开发负责人作为值班人员
+	// 填充运维负责人信息
+	if len(hostInfo.OpsOwners) > 0 {
+		opsOwnersStr := strings.Join(hostInfo.OpsOwners, ", ")
+		alert.Labels["cmdb_ops_owners"] = opsOwnersStr
+		alert.CmdbOpsOwners = opsOwnersStr
+	}
+
+	// 填充开发负责人信息
+	if len(hostInfo.DevOwners) > 0 {
+		devOwnersStr := strings.Join(hostInfo.DevOwners, ", ")
+		alert.Labels["cmdb_dev_owners"] = devOwnersStr
+		alert.CmdbDevOwners = devOwnersStr
+	}
+
+	// 合并运维负责人和开发负责人作为值班人员（用于兼容现有逻辑）
 	allOwners := []string{}
 	allOwners = append(allOwners, hostInfo.OpsOwners...)
 	allOwners = append(allOwners, hostInfo.DevOwners...)
@@ -102,7 +117,7 @@ func (s *cmdbService) EnrichAlertWithCmdbInfo(alert *models.AlertCurEvent) error
 	}
 
 	if len(uniqueOwners) > 0 {
-		// 值班人员：多个负责人用逗号分隔
+		// 值班人员：多个负责人用逗号分隔（保留此字段用于兼容）
 		alert.Labels["cmdb_owners"] = strings.Join(uniqueOwners, ", ")
 	}
 
