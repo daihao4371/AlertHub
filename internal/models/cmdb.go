@@ -3,6 +3,7 @@ package models
 import "time"
 
 // CmdbHost CMDB主机表模型
+// 表名: cmdb_hosts (GORM默认规则会自动转换为复数形式)
 type CmdbHost struct {
 	ID        int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
 	IP        string    `gorm:"column:ip;type:varchar(50);not null;uniqueIndex:uk_ip" json:"ip"`
@@ -10,12 +11,8 @@ type CmdbHost struct {
 	UpdatedAt time.Time `gorm:"column:updated_at;type:datetime;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updatedAt"`
 }
 
-// TableName 指定表名
-func (CmdbHost) TableName() string {
-	return "cmdb_hosts"
-}
-
 // CmdbHostApplication CMDB主机应用关联表模型
+// 表名: cmdb_host_applications (GORM默认规则会自动转换为复数形式)
 type CmdbHostApplication struct {
 	ID        int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
 	HostID    int64     `gorm:"column:host_id;type:bigint;not null;index:idx_host_id" json:"hostId"`
@@ -24,11 +21,6 @@ type CmdbHostApplication struct {
 	DevOwner  *string   `gorm:"column:dev_owner;type:varchar(100);index:idx_dev_owner" json:"devOwner"`
 	CreatedAt time.Time `gorm:"column:created_at;type:datetime;default:CURRENT_TIMESTAMP" json:"createdAt"`
 	UpdatedAt time.Time `gorm:"column:updated_at;type:datetime;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updatedAt"`
-}
-
-// TableName 指定表名
-func (CmdbHostApplication) TableName() string {
-	return "cmdb_host_applications"
 }
 
 // CmdbHostInfo CMDB主机信息（包含应用信息）
