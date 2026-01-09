@@ -1,10 +1,10 @@
 package client
 
 import (
-	"context"
-	"fmt"
 	"alertHub/internal/global"
 	"alertHub/internal/models"
+	"context"
+	"fmt"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	"gorm.io/driver/mysql"
@@ -51,8 +51,8 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.AlertSilences{},
 		&models.Member{},
 		&models.UserRole{},
-		&models.SysApi{},          // API权限表
-		&models.UserRoleApi{},     // 角色API关联表
+		&models.SysApi{},      // API权限表
+		&models.UserRoleApi{}, // 角色API关联表
 		&models.NoticeTemplateExample{},
 		&models.RuleGroups{},
 		&models.RuleTemplateGroup{},
@@ -72,10 +72,10 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.Comment{},
 		&models.ExporterMonitorConfig{},
 		&models.ExporterReportSchedule{},
-		&models.ExporterInspection{},       // 新增: 巡检记录主表
-		&models.ExporterInspectionDetail{}, // 新增: 巡检明细表
-		&models.ProcessTrace{},             // 新增: 处理流程追踪表
-		&models.ProcessOperationLog{},      // 新增: 处理操作日志表
+		&models.ExporterInspection{},            // 新增: 巡检记录主表
+		&models.ExporterInspectionDetail{},      // 新增: 巡检明细表
+		&models.ProcessTrace{},                  // 新增: 处理流程追踪表
+		&models.ProcessOperationLog{},           // 新增: 处理操作日志表
 		&models.IntelligentAnalysisConfig{},     // 新增: 智能分析配置表
 		&models.IntelligentAnalysisResult{},     // 新增: 智能分析结果表
 		&models.IntelligentAnalysisStatistics{}, // 新增: 智能分析统计表
