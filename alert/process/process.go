@@ -203,12 +203,26 @@ func GetDutyUsers(ctx *ctx.Context, noticeData models.AlertNotice) []string {
 			return us
 		case "DingDing":
 			for _, user := range users {
-				us = append(us, fmt.Sprintf("@%s", user.DutyUserId))
+				// 优先使用RealName（真实姓名）显示，如果没有则使用UserName（用户名）
+				// 最后才使用DutyUserId（钉钉用户ID）作为备选
+				displayName := user.RealName
+				if displayName == "" {
+					displayName = user.UserName
+				}
+				if displayName == "" {
+					displayName = user.DutyUserId
+				}
+				us = append(us, fmt.Sprintf("@%s", displayName))
 			}
 			return us
 		case "Email", "WeChat", "CustomHook", "CMDB":
 			for _, user := range users {
-				us = append(us, fmt.Sprintf("@%s", user.UserName))
+				// 优先使用RealName（真实姓名），如果没有则使用UserName（用户名）
+				displayName := user.RealName
+				if displayName == "" {
+					displayName = user.UserName
+				}
+				us = append(us, fmt.Sprintf("@%s", displayName))
 			}
 			return us
 		case "Slack":

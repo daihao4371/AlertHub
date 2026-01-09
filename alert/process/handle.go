@@ -312,17 +312,28 @@ func enrichAlertWithCmdbInfo(ctx *ctx.Context, alert *models.AlertCurEvent) erro
 }
 
 // getDutyUserFromCmdbOrCalendar 获取值班人员
-// 优先使用CMDB的负责人信息，如果没有则使用值班日历
+// 合并CMDB负责人信息和值班日历的值班人员
 func getDutyUserFromCmdbOrCalendar(ctx *ctx.Context, event *models.AlertCurEvent, noticeData models.AlertNotice) string {
+	// 获取值班日历的值班人员
+	dutyUsers := GetDutyUsers(ctx, noticeData)
+	dutyUsersStr := strings.Join(dutyUsers, " ")
+
 	// 尝试从CMDB获取负责人信息
 	cmdbOwners := extractCmdbOwners(event)
+
+	// 合并CMDB负责人和值班日历的值班人员
+	if cmdbOwners != "" && dutyUsersStr != "" && dutyUsersStr != "暂无" {
+		// 如果两者都有，合并显示（CMDB负责人在前，值班人员在后）
+		return cmdbOwners + " " + dutyUsersStr
+	}
+
+	// 如果只有CMDB负责人，返回CMDB负责人
 	if cmdbOwners != "" {
 		return cmdbOwners
 	}
 
-	// 如果没有CMDB负责人信息，使用值班日历
-	dutyUsers := GetDutyUsers(ctx, noticeData)
-	return strings.Join(dutyUsers, " ")
+	// 如果只有值班人员，返回值班人员
+	return dutyUsersStr
 }
 
 // extractCmdbOwners 从告警事件中提取CMDB负责人信息
