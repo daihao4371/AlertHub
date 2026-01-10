@@ -1,14 +1,14 @@
 package services
 
 import (
-	"errors"
-	"fmt"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/internal/types"
 	"alertHub/pkg/sender"
 	"alertHub/pkg/tools"
+	"errors"
+	"fmt"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )
@@ -52,19 +52,20 @@ func (n noticeService) Create(req interface{}) (interface{}, interface{}) {
 	}
 
 	err := n.ctx.DB.Notice().Create(models.AlertNotice{
-		TenantId:     r.TenantId,
-		Uuid:         "n-" + tools.RandId(),
-		Name:         r.Name,
-		DutyId:       r.DutyId,
-		NoticeType:   r.NoticeType,
-		NoticeTmplId: r.NoticeTmplId,
-		DefaultHook:  r.DefaultHook,
-		DefaultSign:  r.DefaultSign,
-		Routes:       r.Routes,
-		Email:        r.Email,
-		PhoneNumber:  r.PhoneNumber,
-		UpdateAt:     time.Now().Unix(),
-		UpdateBy:     r.UpdateBy,
+		TenantId:            r.TenantId,
+		Uuid:                "n-" + tools.RandId(),
+		Name:                r.Name,
+		DutyId:              r.DutyId,
+		NoticeType:          r.NoticeType,
+		NoticeTmplId:        r.NoticeTmplId,
+		DefaultHook:         r.DefaultHook,
+		DefaultSign:         r.DefaultSign,
+		Routes:              r.Routes,
+		Email:               r.Email,
+		PhoneNumber:         r.PhoneNumber,
+		EnterpriseApiConfig: r.EnterpriseApiConfig,
+		UpdateAt:            time.Now().Unix(),
+		UpdateBy:            r.UpdateBy,
 	})
 	if err != nil {
 		return nil, err
@@ -75,19 +76,20 @@ func (n noticeService) Create(req interface{}) (interface{}, interface{}) {
 func (n noticeService) Update(req interface{}) (interface{}, interface{}) {
 	r := req.(*types.RequestNoticeUpdate)
 	err := n.ctx.DB.Notice().Update(models.AlertNotice{
-		TenantId:     r.TenantId,
-		Uuid:         r.Uuid,
-		Name:         r.Name,
-		DutyId:       r.GetDutyId(),
-		NoticeType:   r.NoticeType,
-		NoticeTmplId: r.NoticeTmplId,
-		DefaultHook:  r.DefaultHook,
-		DefaultSign:  r.DefaultSign,
-		Routes:       r.Routes,
-		Email:        r.Email,
-		PhoneNumber:  r.PhoneNumber,
-		UpdateAt:     time.Now().Unix(),
-		UpdateBy:     r.UpdateBy,
+		TenantId:            r.TenantId,
+		Uuid:                r.Uuid,
+		Name:                r.Name,
+		DutyId:              r.GetDutyId(),
+		NoticeType:          r.NoticeType,
+		NoticeTmplId:        r.NoticeTmplId,
+		DefaultHook:         r.DefaultHook,
+		DefaultSign:         r.DefaultSign,
+		Routes:              r.Routes,
+		Email:               r.Email,
+		PhoneNumber:         r.PhoneNumber,
+		EnterpriseApiConfig: r.EnterpriseApiConfig,
+		UpdateAt:            time.Now().Unix(),
+		UpdateBy:            r.UpdateBy,
 	})
 	if err != nil {
 		return nil, err
@@ -200,12 +202,13 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 	}
 
 	err := sender.Tester(n.ctx, sender.SendParams{
-		NoticeType:  r.NoticeType,
-		NoticeName:  r.Name, // 传递通知对象名称，用于识别关键词
-		Hook:        r.DefaultHook,
-		Email:       r.Email,
-		Sign:        r.DefaultSign,
-		PhoneNumber: r.PhoneNumber,
+		NoticeType:          r.NoticeType,
+		NoticeName:          r.Name, // 传递通知对象名称，用于识别关键词
+		Hook:                r.DefaultHook,
+		Email:               r.Email,
+		Sign:                r.DefaultSign,
+		PhoneNumber:         r.PhoneNumber,
+		EnterpriseApiConfig: r.EnterpriseApiConfig,
 	})
 	if err != nil {
 		errList = append(errList, struct {
@@ -215,6 +218,12 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 	}
 
 	for _, route := range r.Routes {
+		// 路由策略中的EnterpriseApiConfig优先，如果没有则使用默认配置
+		routeEnterpriseApiConfig := route.EnterpriseApiConfig
+		if routeEnterpriseApiConfig == nil {
+			routeEnterpriseApiConfig = r.EnterpriseApiConfig
+		}
+
 		err := sender.Tester(n.ctx, sender.SendParams{
 			NoticeType: r.NoticeType,
 			NoticeName: r.Name, // 传递通知对象名称，用于识别关键词
@@ -223,7 +232,8 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 				To: route.To,
 				CC: route.CC,
 			},
-			Sign: route.Sign,
+			Sign:                route.Sign,
+			EnterpriseApiConfig: routeEnterpriseApiConfig,
 		})
 		if err != nil {
 			errList = append(errList, struct {

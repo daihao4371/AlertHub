@@ -36,6 +36,10 @@ type (
 		PhoneNumber []string
 		// 签名
 		Sign string `json:"sign,omitempty"`
+		// 企业内部API配置（仅钉钉使用）
+		EnterpriseApiConfig *models.DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty"`
+		// 接收者账号列表（钉钉ID，仅企业内部API使用）
+		ReceiverAccounts []string `json:"receiverAccounts,omitempty"`
 	}
 
 	// SendInter 发送通知的接口

@@ -1,20 +1,21 @@
 package models
 
 type AlertNotice struct {
-	TenantId         string   `json:"tenantId"`
-	Uuid             string   `json:"uuid"`
-	Name             string   `json:"name"`
-	DutyId           *string  `json:"dutyId"`
-	NoticeType       string   `json:"noticeType"`
-	NoticeTmplId     string   `json:"noticeTmplId"`
-	DefaultHook      string   `json:"hook" gorm:"column:hook"`
-	DefaultSign      string   `json:"sign" gorm:"column:sign"`
-	Routes           []Route  `json:"routes" gorm:"column:routes;serializer:json"`
-	Email            Email    `json:"email" gorm:"email;serializer:json"`
-	PhoneNumber      []string `json:"phoneNumber" gorm:"phoneNumber;serializer:json"`
-	UpdateAt         int64    `json:"updateAt"`
-	UpdateBy         string   `json:"updateBy"`
-	UpdateByRealName string   `json:"updateByRealName" gorm:"-"` // Not persisted, for display only
+	TenantId            string                       `json:"tenantId"`
+	Uuid                string                       `json:"uuid"`
+	Name                string                       `json:"name"`
+	DutyId              *string                      `json:"dutyId"`
+	NoticeType          string                       `json:"noticeType"`
+	NoticeTmplId        string                       `json:"noticeTmplId"`
+	DefaultHook         string                       `json:"hook" gorm:"column:hook"`
+	DefaultSign         string                       `json:"sign" gorm:"column:sign"`
+	Routes              []Route                      `json:"routes" gorm:"column:routes;serializer:json"`
+	Email               Email                        `json:"email" gorm:"email;serializer:json"`
+	PhoneNumber         []string                     `json:"phoneNumber" gorm:"phoneNumber;serializer:json"`
+	EnterpriseApiConfig *DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty" gorm:"column:enterprise_api_config;serializer:json"`
+	UpdateAt            int64                        `json:"updateAt"`
+	UpdateBy            string                       `json:"updateBy"`
+	UpdateByRealName    string                       `json:"updateByRealName" gorm:"-"` // Not persisted, for display only
 }
 
 func (alertNotice *AlertNotice) GetDutyId() *string {
@@ -35,6 +36,30 @@ type Route struct {
 	To []string `json:"to" gorm:"column:to;serializer:json"`
 	// 抄送人
 	CC []string `json:"cc" gorm:"column:cc;serializer:json"`
+	// 企业内部API配置（仅钉钉使用，可选）
+	EnterpriseApiConfig *DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty" gorm:"column:enterprise_api_config;serializer:json"`
+}
+
+// DingDingEnterpriseApiConfig 钉钉企业内部API配置
+// 用于配置通过企业内部API发送个人通知
+type DingDingEnterpriseApiConfig struct {
+	// 是否启用个人通知（true=使用企业内部API，false=使用标准Webhook）
+	EnablePersonalNotification bool `json:"enablePersonalNotification"`
+
+	// 企业内部API完整URL（用户配置的完整URL）
+	ApiUrl string `json:"apiUrl"` // 例如: http://xxxxxx/dmc-service/dmc/api/msg/enterpriseRobot/receiverSingle
+
+	// 认证配置
+	ClientId     string `json:"clientId"`     // loonflow
+	ClientSecret string `json:"clientSecret"` // 加密存储（TODO: 后续实现加密）
+
+	// 业务配置
+	SecretKey    string `json:"secretKey"`    // 加密存储（TODO: 后续实现加密）
+	BusinessCode string `json:"businessCode"` // devops01
+	RobotCode    string `json:"robotCode"`    // 钉钉机器人Code
+
+	// 接收者类型配置（固定为5=钉钉用户ID）
+	ReceiverType int `json:"receiverType"` // 固定值：5=钉钉用户ID
 }
 
 type Email struct {

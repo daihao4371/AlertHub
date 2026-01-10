@@ -3,6 +3,7 @@ package process
 import (
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
+	"alertHub/pkg/cmdb"
 	"alertHub/pkg/sender"
 	"alertHub/pkg/templates"
 	"alertHub/pkg/tools"
@@ -46,8 +47,8 @@ func HandleAlert(ctx *ctx.Context, processType string, faultCenter models.FaultC
 				return nil
 			}
 
-			// 获取当前事件等级对应的 Hook 和 Sign
-			Hook, Sign := getNoticeHookUrlAndSign(noticeData, severity)
+			// 获取当前事件等级对应的 Hook、Sign 和 EnterpriseApiConfig
+			Hook, Sign, enterpriseApiConfig := getNoticeHookUrlAndSign(noticeData, severity)
 
 			for _, event := range events {
 				// 对于告警事件，更新 LastSendTime
@@ -78,20 +79,29 @@ func HandleAlert(ctx *ctx.Context, processType string, faultCenter models.FaultC
 				event.DutyUserPhoneNumber = GetDutyUserPhoneNumber(ctx, noticeData)
 
 				content := generateAlertContent(ctx, event, noticeData)
+
+				// 获取接收者账号列表（仅在企业内部API模式下需要）
+				var receiverAccounts []string
+				if enterpriseApiConfig != nil && enterpriseApiConfig.EnablePersonalNotification {
+					receiverAccounts = getReceiverAccounts(ctx, noticeData, event)
+				}
+
 				err := sender.Sender(ctx, sender.SendParams{
-					TenantId:    event.TenantId,
-					EventId:     event.EventId,
-					RuleName:    event.RuleName,
-					Severity:    event.Severity,
-					NoticeType:  noticeData.NoticeType,
-					NoticeId:    noticeId,
-					NoticeName:  noticeData.Name,
-					IsRecovered: event.IsRecovered,
-					Hook:        Hook,
-					Email:       getNoticeEmail(noticeData, severity),
-					Content:     content,
-					PhoneNumber: phoneNumber,
-					Sign:        Sign,
+					TenantId:            event.TenantId,
+					EventId:             event.EventId,
+					RuleName:            event.RuleName,
+					Severity:            event.Severity,
+					NoticeType:          noticeData.NoticeType,
+					NoticeId:            noticeId,
+					NoticeName:          noticeData.Name,
+					IsRecovered:         event.IsRecovered,
+					Hook:                Hook,
+					Email:               getNoticeEmail(noticeData, severity),
+					Content:             content,
+					PhoneNumber:         phoneNumber,
+					Sign:                Sign,
+					EnterpriseApiConfig: enterpriseApiConfig,
+					ReceiverAccounts:    receiverAccounts,
 				})
 				if err != nil {
 					logc.Error(ctx.Ctx, fmt.Sprintf("Failed to send alert: %v", err))
@@ -160,15 +170,28 @@ func getNoticeData(ctx *ctx.Context, tenantId, noticeId string) (models.AlertNot
 }
 
 // getNoticeHookUrlAndSign 获取事件等级对应的 Hook 和 Sign
-func getNoticeHookUrlAndSign(notice models.AlertNotice, severity string) (string, string) {
+// 返回: Hook URL, Sign, EnterpriseApiConfig
+func getNoticeHookUrlAndSign(notice models.AlertNotice, severity string) (string, string, *models.DingDingEnterpriseApiConfig) {
 	if notice.Routes != nil {
-		for _, hook := range notice.Routes {
-			if hook.Severity == severity {
-				return hook.Hook, hook.Sign
+		for _, route := range notice.Routes {
+			if route.Severity == severity {
+				// 如果路由策略中配置了企业内部API，使用路由策略的配置
+				if route.EnterpriseApiConfig != nil && route.EnterpriseApiConfig.EnablePersonalNotification {
+					return route.Hook, route.Sign, route.EnterpriseApiConfig
+				}
+				// 否则使用默认的企业内部API配置（如果存在）
+				if notice.EnterpriseApiConfig != nil && notice.EnterpriseApiConfig.EnablePersonalNotification {
+					return route.Hook, route.Sign, notice.EnterpriseApiConfig
+				}
+				return route.Hook, route.Sign, nil
 			}
 		}
 	}
-	return notice.DefaultHook, notice.DefaultSign
+	// 使用默认Hook，检查是否配置了企业内部API
+	if notice.EnterpriseApiConfig != nil && notice.EnterpriseApiConfig.EnablePersonalNotification {
+		return notice.DefaultHook, notice.DefaultSign, notice.EnterpriseApiConfig
+	}
+	return notice.DefaultHook, notice.DefaultSign, nil
 }
 
 // getNoticeEmail 获取事件等级对应的 Email
@@ -217,6 +240,68 @@ func generateAlertContent(ctx *ctx.Context, alert *models.AlertCurEvent, noticeD
 		return tools.JsonMarshalToString(content)
 	}
 	return templates.NewTemplate(ctx, *alert, noticeData).CardContentMsg
+}
+
+// getReceiverAccounts 获取接收者账号列表（钉钉ID）
+// 合并三种来源：CMDB运维负责人、CMDB开发负责人、值班人员
+func getReceiverAccounts(ctx *ctx.Context, noticeData models.AlertNotice, event *models.AlertCurEvent) []string {
+	dingDingIdMap := make(map[string]bool) // 用于去重
+	var accounts []string
+
+	// 1. 从CMDB中获取运维和开发负责人的钉钉ID
+	if event != nil && event.Labels != nil {
+		var hostIP string
+
+		// 尝试从ip字段获取
+		if ipVal, exists := event.Labels["ip"]; exists {
+			if ipStr, ok := ipVal.(string); ok && ipStr != "" {
+				hostIP = cmdb.ExtractIPFromInstance(ipStr)
+			}
+		}
+
+		// 如果没有ip字段，尝试从instance字段提取
+		if hostIP == "" {
+			if instanceVal, exists := event.Labels["instance"]; exists {
+				if instanceStr, ok := instanceVal.(string); ok && instanceStr != "" {
+					hostIP = cmdb.ExtractIPFromInstance(instanceStr)
+				}
+			}
+		}
+
+		// 查询CMDB主机信息（包含dingding_id）
+		if hostIP != "" {
+			hostInfo, err := ctx.DB.Cmdb().GetHostInfoWithDingDingIdByIP(hostIP)
+			if err == nil && hostInfo != nil {
+				// 收集运维负责人的钉钉ID
+				for _, dingDingId := range hostInfo.OpsOwnerDingDingIds {
+					if dingDingId != "" && !dingDingIdMap[dingDingId] {
+						dingDingIdMap[dingDingId] = true
+						accounts = append(accounts, dingDingId)
+					}
+				}
+				// 收集开发负责人的钉钉ID
+				for _, dingDingId := range hostInfo.DevOwnerDingDingIds {
+					if dingDingId != "" && !dingDingIdMap[dingDingId] {
+						dingDingIdMap[dingDingId] = true
+						accounts = append(accounts, dingDingId)
+					}
+				}
+			}
+		}
+	}
+
+	// 2. 从值班人员中提取钉钉ID
+	users, ok := ctx.DB.DutyCalendar().GetDutyUserInfo(*noticeData.GetDutyId(), time.Now().Format("2006-1-2"))
+	if ok {
+		for _, user := range users {
+			if user.DutyUserId != "" && !dingDingIdMap[user.DutyUserId] {
+				dingDingIdMap[user.DutyUserId] = true
+				accounts = append(accounts, user.DutyUserId)
+			}
+		}
+	}
+
+	return accounts
 }
 
 // enrichAlertWithCmdbInfo 为告警事件填充CMDB信息

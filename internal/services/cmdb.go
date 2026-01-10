@@ -3,6 +3,7 @@ package services
 import (
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
+	"alertHub/pkg/cmdb"
 	"strings"
 
 	"github.com/zeromicro/go-zero/core/logc"
@@ -56,7 +57,7 @@ func (s *cmdbService) EnrichAlertWithCmdbInfo(alert *models.AlertCurEvent) error
 		if instanceVal, exists := alert.Labels["instance"]; exists {
 			if instanceStr, ok := instanceVal.(string); ok && instanceStr != "" {
 				// 从 "10.10.217.225:9100" 格式中提取IP
-				hostIP = extractIPFromInstance(instanceStr)
+				hostIP = cmdb.ExtractIPFromInstance(instanceStr)
 			}
 		}
 	}
@@ -122,24 +123,4 @@ func (s *cmdbService) EnrichAlertWithCmdbInfo(alert *models.AlertCurEvent) error
 	}
 
 	return nil
-}
-
-// extractIPFromInstance 从instance字符串中提取IP地址
-// 支持格式: "10.10.217.225:9100" -> "10.10.217.225"
-// 如果已经是IP格式，直接返回
-func extractIPFromInstance(instance string) string {
-	if instance == "" {
-		return ""
-	}
-
-	// 如果包含冒号，提取IP部分
-	if strings.Contains(instance, ":") {
-		parts := strings.Split(instance, ":")
-		if len(parts) > 0 {
-			return strings.TrimSpace(parts[0])
-		}
-	}
-
-	// 直接返回（已经是IP格式）
-	return strings.TrimSpace(instance)
 }
