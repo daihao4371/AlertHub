@@ -47,20 +47,6 @@ type AWSCloudWatch struct {
 	SecretKey string `json:"secretKey"`
 }
 
-//type PromQueryRes struct {
-//	Data data `json:"data"`
-//}
-//
-//type data struct {
-//	Result     []result `json:"result"`
-//	ResultType string   `json:"resultType"`
-//}
-//
-//type result struct {
-//	Metric map[string]interface{} `json:"metric"`
-//	Value  []interface{}          `json:"value"`
-//}
-
 func (d *AlertDataSource) GetEnabled() *bool {
 	if d.Enabled == nil {
 		isOk := false

@@ -6,18 +6,18 @@ import "time"
 type ExporterMonitorConfig struct {
 	ID               int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
 	TenantId         string    `gorm:"column:tenant_id;type:varchar(64);not null;uniqueIndex:uk_tenant" json:"tenantId"`
-	Enabled          *bool     `gorm:"column:enabled;type:tinyint(1);default:1" json:"enabled"`                       // 是否启用巡检
-	DatasourceIds    []string  `gorm:"column:datasource_ids;serializer:json" json:"datasourceIds"`                    // 监控的数据源ID列表
-	InspectionTimes  []string  `gorm:"column:inspection_times;serializer:json" json:"inspectionTimes"`                // 巡检时间配置 (如: ["09:00", "21:00"])
-	HistoryRetention int       `gorm:"column:history_retention;type:int;default:90" json:"historyRetention"`          // 历史保留天数,默认90天
-	AutoRefresh      *bool     `gorm:"column:auto_refresh;type:tinyint(1);default:0" json:"autoRefresh"`              // 前端自动刷新开关
+	Enabled          *bool     `gorm:"column:enabled;type:tinyint(1);default:1" json:"enabled"`              // 是否启用巡检
+	DatasourceIds    []string  `gorm:"column:datasource_ids;serializer:json" json:"datasourceIds"`           // 监控的数据源ID列表
+	InspectionTimes  []string  `gorm:"column:inspection_times;serializer:json" json:"inspectionTimes"`       // 巡检时间配置 (如: ["09:00", "21:00"])
+	HistoryRetention int       `gorm:"column:history_retention;type:int;default:90" json:"historyRetention"` // 历史保留天数,默认90天
+	AutoRefresh      *bool     `gorm:"column:auto_refresh;type:tinyint(1);default:0" json:"autoRefresh"`     // 前端自动刷新开关
 	CreatedAt        time.Time `gorm:"column:created_at;type:datetime;default:CURRENT_TIMESTAMP" json:"createdAt"`
 	UpdatedAt        time.Time `gorm:"column:updated_at;type:datetime;default:CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" json:"updatedAt"`
 }
 
 // TableName 指定表名
 func (ExporterMonitorConfig) TableName() string {
-	return "w8t_exporter_monitor_config"
+	return "exporter_monitor_config"
 }
 
 // GetEnabled 安全获取 Enabled 字段 (防止空指针)
@@ -50,7 +50,7 @@ type ExporterReportSchedule struct {
 
 // TableName 指定表名
 func (ExporterReportSchedule) TableName() string {
-	return "w8t_exporter_report_schedule"
+	return "exporter_report_schedule"
 }
 
 // GetEnabled 安全获取 Enabled 字段
@@ -67,7 +67,7 @@ type ExporterInspection struct {
 	InspectionId     string                   `gorm:"column:inspection_id;type:varchar(64);not null;uniqueIndex:uk_inspection" json:"inspectionId"` // 巡检批次ID (UUID)
 	TenantId         string                   `gorm:"column:tenant_id;type:varchar(64);not null;index:idx_tenant_time" json:"tenantId"`
 	DatasourceId     string                   `gorm:"column:datasource_id;type:varchar(64);not null;index:idx_datasource_time" json:"datasourceId"`
-	DatasourceName   string                   `gorm:"column:datasource_name;type:varchar(128)" json:"datasourceName"`                                 // 数据源名称
+	DatasourceName   string                   `gorm:"column:datasource_name;type:varchar(128)" json:"datasourceName"`                                // 数据源名称
 	InspectionTime   time.Time                `gorm:"column:inspection_time;type:datetime;not null;index:idx_inspection_time" json:"inspectionTime"` // 巡检时间
 	TotalCount       int                      `gorm:"column:total_count;type:int;not null;default:0" json:"totalCount"`                              // Exporter 总数
 	UpCount          int                      `gorm:"column:up_count;type:int;not null;default:0" json:"upCount"`                                    // UP 状态数量
@@ -80,7 +80,7 @@ type ExporterInspection struct {
 
 // TableName 指定表名
 func (ExporterInspection) TableName() string {
-	return "w8t_exporter_inspection"
+	return "exporter_inspection"
 }
 
 // ExporterInspectionDetail Exporter 巡检明细表
@@ -104,7 +104,7 @@ type ExporterInspectionDetail struct {
 
 // TableName 指定表名
 func (ExporterInspectionDetail) TableName() string {
-	return "w8t_exporter_inspection_detail"
+	return "exporter_inspection_detail"
 }
 
 // ExporterStatus Exporter 状态 (用于 API 返回,不直接存数据库)
