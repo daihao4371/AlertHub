@@ -215,6 +215,14 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/subscribe/listSubscribe", "GET", "获取订阅列表", "订阅管理"},
 		{"/api/w8t/subscribe/getSubscribe", "GET", "获取订阅详情", "订阅管理"},
 
+		// 第三方告警接入
+		{"/api/w8t/thirdPartyWebhook/create", "POST", "创建第三方Webhook配置", "第三方告警"},
+		{"/api/w8t/thirdPartyWebhook/update", "POST", "更新第三方Webhook配置", "第三方告警"},
+		{"/api/w8t/thirdPartyWebhook/delete", "POST", "删除第三方Webhook配置", "第三方告警"},
+		{"/api/w8t/thirdPartyWebhook/get", "GET", "获取第三方Webhook配置详情", "第三方告警"},
+		{"/api/w8t/thirdPartyWebhook/list", "GET", "获取第三方Webhook配置列表", "第三方告警"},
+		{"/api/w8t/thirdPartyAlert/list", "GET", "获取第三方告警记录列表", "第三方告警"},
+
 		// 租户管理
 		{"/api/w8t/tenant/createTenant", "POST", "创建租户", "租户管理"},
 		{"/api/w8t/tenant/updateTenant", "POST", "更新租户", "租户管理"},

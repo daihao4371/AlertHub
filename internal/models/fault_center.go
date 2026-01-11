@@ -71,7 +71,7 @@ func (f *FaultCenter) GetUpgradeNoticeId() string {
 }
 
 func (f *FaultCenter) TableName() string {
-	return "w8t_fault_center"
+	return "fault_center"
 }
 
 func (f *FaultCenter) GetIsUpgradeEnabled() bool {

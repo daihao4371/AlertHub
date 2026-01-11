@@ -42,6 +42,8 @@ var (
 	CasbinPermissionService    InterCasbinService              // 新增Casbin权限服务
 	DashboardStatisticsService InterDashboardStatisticsService // 首页统计服务
 	ProcessTraceService        InterProcessTraceService        // 处理流程追踪服务
+	ThirdPartyWebhookService   InterThirdPartyWebhookService   // 第三方Webhook管理服务
+	ThirdPartyAlertService     InterThirdPartyAlertService     // 第三方告警接收服务
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -80,4 +82,6 @@ func NewServices(ctx *ctx.Context) {
 	MetricsExplorerService = newInterMetricsExplorerService(ctx)
 	CasbinPermissionService = newInterCasbinService(ctx)            // 初始化Casbin权限服务
 	DashboardStatisticsService = newDashboardStatisticsService(ctx) // 初始化首页统计服务
+	ThirdPartyWebhookService = newInterThirdPartyWebhookService(ctx) // 初始化第三方Webhook管理服务
+	ThirdPartyAlertService = newInterThirdPartyAlertService(ctx)     // 初始化第三方告警接收服务
 }
