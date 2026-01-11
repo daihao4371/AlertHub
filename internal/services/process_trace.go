@@ -17,8 +17,8 @@ type (
 	processTraceService struct {
 		db      *gorm.DB
 		ctx     *ctx.Context
-		repo    repo.ProcessTraceRepo
-		logRepo repo.ProcessOperationLogRepo
+		repo    repo.InterProcessTraceRepo
+		logRepo repo.InterProcessOperationLogRepo
 	}
 
 	InterProcessTraceService interface {
@@ -59,8 +59,8 @@ func NewInterProcessTraceService(ctx *ctx.Context) InterProcessTraceService {
 	return &processTraceService{
 		db:      ctx.DB.DB(),
 		ctx:     ctx,
-		repo:    repo.NewProcessTraceRepo(ctx.DB.DB()),
-		logRepo: repo.NewProcessOperationLogRepo(ctx.DB.DB()),
+		repo:    ctx.DB.ProcessTrace(),
+		logRepo: ctx.DB.ProcessOperationLog(),
 	}
 }
 

@@ -38,7 +38,11 @@ type (
 		Ai() InterAiRepo
 		Comment() InterCommentRepo
 		ExporterMonitor() InterExporterMonitorRepo
+		ProcessTrace() InterProcessTraceRepo
+		ProcessOperationLog() InterProcessOperationLogRepo
 		Cmdb() InterCmdbRepo
+		ThirdPartyWebhook() InterThirdPartyWebhookRepo
+		ThirdPartyAlert() InterThirdPartyAlertRepo
 	}
 )
 
@@ -87,6 +91,18 @@ func (e *entryRepo) Comment() InterCommentRepo         { return newCommentInterf
 func (e *entryRepo) ExporterMonitor() InterExporterMonitorRepo {
 	return newExporterMonitorInterface(e.db, e.g)
 }
+func (e *entryRepo) ProcessTrace() InterProcessTraceRepo {
+	return newProcessTraceInterface(e.db, e.g)
+}
+func (e *entryRepo) ProcessOperationLog() InterProcessOperationLogRepo {
+	return newProcessOperationLogInterface(e.db, e.g)
+}
 func (e *entryRepo) Cmdb() InterCmdbRepo {
 	return newCmdbInterface(e.db, e.g)
+}
+func (e *entryRepo) ThirdPartyWebhook() InterThirdPartyWebhookRepo {
+	return newThirdPartyWebhookRepo(e.db, e.g)
+}
+func (e *entryRepo) ThirdPartyAlert() InterThirdPartyAlertRepo {
+	return newThirdPartyAlertRepo(e.db, e.g)
 }

@@ -22,7 +22,7 @@ type ProbingRule struct {
 }
 
 func (n *ProbingRule) TableName() string {
-	return "w8t_probing_rule"
+	return "probing_rule"
 }
 
 func (n *ProbingRule) GetRecoverNotify() *bool {

@@ -7,7 +7,7 @@ import (
 )
 
 type (
-	ProcessTraceRepo interface {
+	InterProcessTraceRepo interface {
 		// 创建处理流程追踪记录
 		Create(processTrace *models.ProcessTrace) error
 
@@ -30,7 +30,7 @@ type (
 		Delete(tenantId, processId string) error
 	}
 
-	ProcessOperationLogRepo interface {
+	InterProcessOperationLogRepo interface {
 		// 创建操作日志
 		Create(log *models.ProcessOperationLog) error
 
@@ -50,13 +50,13 @@ type (
 	}
 )
 
-func NewProcessTraceRepo(db *gorm.DB) ProcessTraceRepo {
+func newProcessTraceInterface(db *gorm.DB, g InterGormDBCli) InterProcessTraceRepo {
 	return &processTraceRepo{
 		db: db,
 	}
 }
 
-func NewProcessOperationLogRepo(db *gorm.DB) ProcessOperationLogRepo {
+func newProcessOperationLogInterface(db *gorm.DB, g InterGormDBCli) InterProcessOperationLogRepo {
 	return &processOperationLogRepo{
 		db: db,
 	}
