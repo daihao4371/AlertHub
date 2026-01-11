@@ -51,6 +51,8 @@ func Router(engine *gin.Engine) {
 			api.MetricsExplorerController.API(w8t)
 			api.CasbinPermissionController.API(w8t)
 			api.ProcessTraceController.API(w8t)
+			api.ThirdPartyWebhookController.API(w8t) // 第三方Webhook管理API
+			api.ThirdPartyAlertController.API(w8t)   // 第三方告警查询API
 		}
 
 		oidc := v1.Group("oidc")
@@ -60,6 +62,9 @@ func Router(engine *gin.Engine) {
 			oidc.GET("token", api.SystemController.CookieConvertToken)
 		}
 	}
+
+	// 公开的Webhook接收接口（无需认证）
+	api.ThirdPartyAlertController.PublicAPI(v1)
 
 	// 快捷操作路由（独立于 v1 分组，使用自定义 Token 验证）
 	api.QuickActionController.API(engine.Group("api/v1"))

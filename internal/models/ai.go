@@ -7,5 +7,5 @@ type AiContentRecord struct {
 }
 
 func (a AiContentRecord) TableName() string {
-	return "w8t_ai_content_record"
+	return "ai_content_record"
 }

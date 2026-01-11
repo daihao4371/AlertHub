@@ -38,6 +38,8 @@ type (
 		Ai() InterAiRepo
 		Comment() InterCommentRepo
 		ExporterMonitor() InterExporterMonitorRepo
+		ThirdPartyWebhook() InterThirdPartyWebhookRepo
+		ThirdPartyAlert() InterThirdPartyAlertRepo
 	}
 )
 
@@ -85,4 +87,10 @@ func (e *entryRepo) Ai() InterAiRepo                   { return newAiRepoInterfa
 func (e *entryRepo) Comment() InterCommentRepo         { return newCommentInterface(e.db, e.g) }
 func (e *entryRepo) ExporterMonitor() InterExporterMonitorRepo {
 	return newExporterMonitorInterface(e.db, e.g)
+}
+func (e *entryRepo) ThirdPartyWebhook() InterThirdPartyWebhookRepo {
+	return newThirdPartyWebhookRepo(e.db, e.g)
+}
+func (e *entryRepo) ThirdPartyAlert() InterThirdPartyAlertRepo {
+	return newThirdPartyAlertRepo(e.db, e.g)
 }
