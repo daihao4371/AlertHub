@@ -25,9 +25,29 @@ func NewInterGormDBCli(db *gorm.DB) InterGormDBCli {
 }
 
 // Create 插入数据
+// 注意：该方法会自动处理值类型和指针类型，确保传递给 GORM 的是指针
 func (g GormDBCli) Create(table, value interface{}) error {
 	return g.executeTransaction(func(tx *gorm.DB) error {
-		return tx.Model(table).Create(value).Error
+		// 检查 value 的类型
+		valueType := reflect.TypeOf(value)
+		if valueType == nil {
+			return fmt.Errorf("插入数据不能为空")
+		}
+
+		// 如果 value 是值类型（非指针），需要转换为指针类型
+		// 因为 GORM 的 Create 方法需要指针类型才能正确设置默认值
+		var createTarget interface{}
+		if valueType.Kind() == reflect.Ptr {
+			// 已经是指针类型，直接使用
+			createTarget = value
+		} else {
+			// 是值类型，需要创建一个指针并复制数据
+			valuePtr := reflect.New(valueType)
+			valuePtr.Elem().Set(reflect.ValueOf(value))
+			createTarget = valuePtr.Interface()
+		}
+
+		return tx.Model(table).Create(createTarget).Error
 	}, "数据写入失败")
 }
 
