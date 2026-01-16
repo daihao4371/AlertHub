@@ -69,7 +69,7 @@ func (t *TencentSmsProvider) sendSmsWithoutRetry(tencentConfig TencentSmsConfig,
 	}
 
 	// 准备模板参数 - 腾讯云短信使用模板参数而非直接文本
-	templateParams := t.buildTencentTemplateParams(content, isRecovered)
+	templateParams := t.buildTencentTemplateParams(content)
 
 	// 构建发送请求
 	request := t.buildTencentSmsRequest(tencentConfig, phoneNumbers, templateParams)
@@ -114,21 +114,12 @@ func (t *TencentSmsProvider) createTencentSmsClient(config TencentSmsConfig) (*s
 }
 
 // buildTencentTemplateParams 构建腾讯云短信模板参数
-func (t *TencentSmsProvider) buildTencentTemplateParams(content string, isRecovered bool) []*string {
-	status := "告警中"
-	if isRecovered {
-		status = "已恢复"
+// 说明：content参数已经是完整的格式化文本，直接作为单个模板参数发送
+// 腾讯云模板应该配置为单参数模式，如：{1}
+func (t *TencentSmsProvider) buildTencentTemplateParams(content string) []*string {
+	return []*string{
+		common.StringPtr(content),
 	}
-
-	// 腾讯云短信模板参数（根据实际模板设计）
-	// 假设模板为：【{1}】{2} - {3}，时间：{4}
-	params := []*string{
-		common.StringPtr(status),                                    // {1} 状态
-		common.StringPtr(content),                                   // {2} 内容
-		common.StringPtr(time.Now().Format("2006-01-02 15:04:05")), // {3} 时间
-	}
-
-	return params
 }
 
 // buildTencentSmsRequest 构建腾讯云短信发送请求

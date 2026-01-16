@@ -13,6 +13,7 @@ type AlertNotice struct {
 	Email               Email                        `json:"email" gorm:"email;serializer:json"`
 	PhoneNumber         []string                     `json:"phoneNumber" gorm:"phoneNumber;serializer:json"`
 	EnterpriseApiConfig *DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty" gorm:"column:enterprise_api_config;serializer:json"`
+	InternalSmsConfig   *InternalSmsConfig           `json:"internalSmsConfig,omitempty" gorm:"column:internal_sms_config;serializer:json"`
 	UpdateAt            int64                        `json:"updateAt"`
 	UpdateBy            string                       `json:"updateBy"`
 	UpdateByRealName    string                       `json:"updateByRealName" gorm:"-"` // Not persisted, for display only
@@ -38,6 +39,8 @@ type Route struct {
 	CC []string `json:"cc" gorm:"column:cc;serializer:json"`
 	// 企业内部API配置（仅钉钉使用，可选）
 	EnterpriseApiConfig *DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty" gorm:"column:enterprise_api_config;serializer:json"`
+	// 内部短信网关配置（可选，如果未配置则使用默认配置）
+	InternalSmsConfig *InternalSmsConfig `json:"internalSmsConfig,omitempty" gorm:"column:internal_sms_config;serializer:json"`
 }
 
 // DingDingEnterpriseApiConfig 钉钉企业内部API配置
@@ -60,6 +63,33 @@ type DingDingEnterpriseApiConfig struct {
 
 	// 接收者类型配置（固定为5=钉钉用户ID）
 	ReceiverType int `json:"receiverType"` // 固定值：5=钉钉用户ID
+}
+
+// InternalSmsConfig 内部短信网关配置
+type InternalSmsConfig struct {
+	// 网关基础配置
+	GatewayUrl     string `json:"gatewayUrl"`     // 网关地址，例如：http://smsinner.01.prd.bjm6v.belle.lan/o2o-ms/sendSms
+	Priority       string `json:"priority"`       // 优先级，例如：20
+	TimeoutSeconds int    `json:"timeoutSeconds"` // 请求超时时间（秒），默认5秒
+
+	// 重试配置
+	RetryConfig *RetryConfig `json:"retryConfig,omitempty"`
+
+	// 速率限制配置
+	RateLimitConfig *RateLimitConfig `json:"rateLimitConfig,omitempty"`
+}
+
+// RetryConfig 重试配置
+type RetryConfig struct {
+	MaxRetries            int     `json:"maxRetries"`           // 最大重试次数，默认3
+	BackoffMultiplier     float64 `json:"backoffMultiplier"`    // 退避倍数，默认2.0
+	InitialBackoffSeconds int     `json:"initialBackoffSeconds"` // 初始退避时间（秒），默认1
+}
+
+// RateLimitConfig 速率限制配置
+type RateLimitConfig struct {
+	MaxPerSecond int `json:"maxPerSecond"`   // 每秒最大发送数，默认10
+	MaxPerMinute int `json:"maxPerMinute"`   // 每分钟最大发送数，默认500
 }
 
 type Email struct {

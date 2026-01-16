@@ -1,15 +1,13 @@
 package sender
 
 import (
-	"errors"
-	"fmt"
-	"regexp"
-	"strings"
-
 	"alertHub/pkg/provider"
 	"alertHub/pkg/templates"
+	"alertHub/pkg/tools"
+	"errors"
+	"fmt"
+
 	"github.com/bytedance/sonic"
-	"github.com/zeromicro/go-zero/core/logc"
 )
 
 // SmsConfig 短信服务配置
@@ -21,10 +19,10 @@ type SmsConfig struct {
 	SignName        string `json:"signName"`        // 短信签名
 	TemplateId      string `json:"templateId"`      // 腾讯云模板ID
 	TemplateCode    string `json:"templateCode"`    // 阿里云模板代码
-	
+
 	// 消息模板配置
 	MessageTemplates templates.SmsTemplateConfig `json:"messageTemplates,omitempty"` // 消息模板配置
-	
+
 	// 重试配置
 	RetryConfig *provider.RetryConfig `json:"retryConfig,omitempty"` // 重试配置，可选
 }
@@ -77,7 +75,7 @@ type SmsResult struct {
 }
 
 // SmsSender 短信发送器
-type SmsSender struct{
+type SmsSender struct {
 	renderer        *templates.SmsTemplateRenderer // 模板渲染器
 	providerFactory *provider.SmsProviderFactory   // 服务商工厂
 }
@@ -109,7 +107,7 @@ func (s *SmsSender) Send(params SendParams) error {
 	}
 
 	// 验证手机号格式
-	validNums := s.validatePhoneNumbers(params.PhoneNumber)
+	validNums := tools.ValidatePhoneNumbers(params.PhoneNumber)
 	if len(validNums) == 0 {
 		return errors.New("未找到有效的手机号")
 	}
@@ -141,7 +139,7 @@ func (s *SmsSender) Test(params SendParams) error {
 		return fmt.Errorf("配置验证失败: %v", err)
 	}
 
-	validNums := s.validatePhoneNumbers(params.PhoneNumber)
+	validNums := tools.ValidatePhoneNumbers(params.PhoneNumber)
 	if len(validNums) == 0 {
 		return errors.New("未找到有效的手机号")
 	}
@@ -209,26 +207,6 @@ func (s *SmsSender) validateConfig(config *SmsConfig) error {
 	return nil
 }
 
-// validatePhoneNumbers 验证手机号格式 (中国手机号)
-func (s *SmsSender) validatePhoneNumbers(numbers []string) []string {
-	var validNumbers []string
-	phoneRegex := regexp.MustCompile(`^1[3-9]\d{9}$`)
-
-	for _, number := range numbers {
-		// 清理号码格式
-		cleanNumber := strings.ReplaceAll(number, " ", "")
-		cleanNumber = strings.ReplaceAll(cleanNumber, "-", "")
-
-		if phoneRegex.MatchString(cleanNumber) {
-			validNumbers = append(validNumbers, cleanNumber)
-		} else {
-			logc.Error(nil, fmt.Sprintf("无效的手机号: %s", number))
-		}
-	}
-
-	return validNumbers
-}
-
 // buildMessageWithTemplate 使用模板构建短信消息内容
 func (s *SmsSender) buildMessageWithTemplate(params SendParams, config *SmsConfig) string {
 	// 构建模板变量
@@ -236,26 +214,26 @@ func (s *SmsSender) buildMessageWithTemplate(params SendParams, config *SmsConfi
 	if params.IsRecovered {
 		status = "已恢复"
 	}
-	
+
 	// 解析告警内容
 	msgMap := params.GetSendMsg()
 	content := params.Content
 	description := content
-	
+
 	if desc, ok := msgMap["description"].(string); ok && desc != "" {
 		description = desc
 	}
-	
+
 	// 使用模板渲染器构建变量
-	variables := s.renderer.BuildVariables(status, params.RuleName, content, description, 
+	variables := s.renderer.BuildVariables(status, params.RuleName, content, description,
 		params.Severity, params.NoticeName, params.EventId, params.TenantId)
-	
+
 	// 获取对应的模板
 	template := s.renderer.GetTemplate(config.MessageTemplates, params.IsRecovered, false)
-	
+
 	// 渲染模板
 	message := s.renderer.RenderTemplate(template, variables)
-	
+
 	// 限制消息长度
 	return s.renderer.LimitMessageLength(message)
 }
@@ -264,13 +242,13 @@ func (s *SmsSender) buildMessageWithTemplate(params SendParams, config *SmsConfi
 func (s *SmsSender) buildTestMessage(config *SmsConfig) string {
 	// 使用模板渲染器构建测试变量
 	variables := s.renderer.BuildTestVariables()
-	
+
 	// 获取测试模板
 	template := s.renderer.GetTemplate(config.MessageTemplates, false, true)
-	
+
 	// 渲染模板
 	message := s.renderer.RenderTemplate(template, variables)
-	
+
 	// 限制消息长度
 	return s.renderer.LimitMessageLength(message)
 }

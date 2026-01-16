@@ -14,6 +14,7 @@ type RequestNoticeCreate struct {
 	Email               models.Email                        `json:"email" gorm:"email;serializer:json"`
 	PhoneNumber         []string                            `json:"phoneNumber" gorm:"phoneNumber;serializer:json"`
 	EnterpriseApiConfig *models.DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty"`
+	InternalSmsConfig   *models.InternalSmsConfig           `json:"internalSmsConfig,omitempty"`
 	UpdateBy            string                              `json:"updateBy"`
 }
 
@@ -30,6 +31,7 @@ type RequestNoticeUpdate struct {
 	Email               models.Email                        `json:"email" gorm:"email;serializer:json"`
 	PhoneNumber         []string                            `json:"phoneNumber" gorm:"phoneNumber;serializer:json"`
 	EnterpriseApiConfig *models.DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty"`
+	InternalSmsConfig   *models.InternalSmsConfig           `json:"internalSmsConfig,omitempty"`
 	UpdateBy            string                              `json:"updateBy"`
 }
 
@@ -61,4 +63,5 @@ type RequestNoticeTest struct {
 	Email               models.Email                        `json:"email"`
 	PhoneNumber         []string                            `json:"phoneNumber"`
 	EnterpriseApiConfig *models.DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty"`
+	InternalSmsConfig   *models.InternalSmsConfig           `json:"internalSmsConfig,omitempty"`
 }

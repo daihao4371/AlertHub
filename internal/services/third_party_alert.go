@@ -142,7 +142,7 @@ func (s thirdPartyAlertService) extractAlertData(rawData map[string]interface{},
 		Source:     source,
 		SourceTime: time.Now().Unix(),
 		Status:     string(models.ThirdPartyAlertFiring), // 默认为触发状态
-		Severity:   "P2",                                  // 默认P2级别
+		Severity:   "P2",                                 // 默认P2级别
 		Tags:       make(map[string]string),
 	}
 

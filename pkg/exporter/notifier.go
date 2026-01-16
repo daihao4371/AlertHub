@@ -338,11 +338,11 @@ func (p *ContentParser) parseSection(line string) []map[string]interface{} {
 		matcher func(string) bool
 		parser  func() []map[string]interface{}
 	}{
-		{func(l string) bool { return strings.Contains(l, "📈 总体统计") }, p.parseStatisticsSection},
-		{func(l string) bool { return strings.Contains(l, "⚠️ 异常 Exporter 列表") }, p.parseDownListSection},
-		{func(l string) bool { return strings.Contains(l, "✅ 所有 Exporter 运行正常") }, p.parseNormalSection},
-		{func(l string) bool { return strings.Contains(l, "📋 异常详情") }, p.parseDetailedSection},
-		{func(l string) bool { return strings.Contains(l, "📉 近 7 日趋势") }, p.parseTrendsSection},
+		{func(l string) bool { return strings.Contains(l, "总体统计") }, p.parseStatisticsSection},
+		{func(l string) bool { return strings.Contains(l, "异常 Exporter 列表") }, p.parseDownListSection},
+		{func(l string) bool { return strings.Contains(l, "所有 Exporter 运行正常") }, p.parseNormalSection},
+		{func(l string) bool { return strings.Contains(l, "异常详情") }, p.parseDetailedSection},
+		{func(l string) bool { return strings.Contains(l, "近 7 日趋势") }, p.parseTrendsSection},
 	}
 
 	for _, sp := range sectionParsers {
@@ -419,10 +419,10 @@ func (p *ContentParser) parseStatisticsRow(line string, stats *Statistics) {
 
 	// 使用查找表解析字段
 	fieldParsers := map[string]func(string){
-		"总数":   func(v string) { stats.TotalCount, _ = parseInteger(v) },
-		"正常":   func(v string) { stats.UpCount, _ = parseInteger(v) },
-		"异常":   func(v string) { stats.DownCount, _ = parseInteger(v) },
-		"未知":   func(v string) { stats.UnknownCount, _ = parseInteger(v) },
+		"总数":  func(v string) { stats.TotalCount, _ = parseInteger(v) },
+		"正常":  func(v string) { stats.UpCount, _ = parseInteger(v) },
+		"异常":  func(v string) { stats.DownCount, _ = parseInteger(v) },
+		"未知":  func(v string) { stats.UnknownCount, _ = parseInteger(v) },
 		"可用率": func(v string) { stats.AvailabilityRate, _ = parsePercentage(v) },
 	}
 
@@ -615,7 +615,7 @@ func (p *ContentParser) parseNormalSection() []map[string]interface{} {
 			"tag": "div",
 			"text": map[string]interface{}{
 				"tag":     "lark_md",
-				"content": "✅ 所有 Exporter 运行正常\n\n🎉 本次巡检未发现任何异常，所有 Exporter 均正常运行。",
+				"content": "所有 Exporter 运行正常\n\n🎉 本次巡检未发现任何异常，所有 Exporter 均正常运行。",
 			},
 		},
 	}
@@ -669,7 +669,7 @@ func (p *ContentParser) parseTrendsSection() []map[string]interface{} {
 	}
 
 	// 添加标题
-	title := createTextElement("**📉 近 7 日趋势**")
+	title := createTextElement("** 近 7 日趋势**")
 	return append([]map[string]interface{}{title}, trends...)
 }
 
@@ -717,7 +717,7 @@ func (p *ContentParser) buildFooter() []map[string]interface{} {
 			"elements": []map[string]interface{}{
 				{
 					"tag":     "lark_md",
-					"content": fmt.Sprintf("⏰ **报告时间**: %s\n\n*本报告由 AlertHub Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
+					"content": fmt.Sprintf(" **报告时间**: %s\n\n*本报告由 AlertHub Exporter 健康巡检系统自动生成*", time.Now().Format("2006-01-02 15:04:05")),
 				},
 			},
 		},
@@ -768,8 +768,8 @@ func buildStatisticsCard(stats *Statistics) []map[string]interface{} {
 
 	// 第一行：总数和可用率
 	row1 := []map[string]interface{}{
-		createColumn("📊 总数", fmt.Sprintf("**%d**", stats.TotalCount), ""),
-		createColumn("📈 可用率", fmt.Sprintf("**%.1f%%**", stats.AvailabilityRate), getRateColor(stats.AvailabilityRate)),
+		createColumn("总数", fmt.Sprintf("**%d**", stats.TotalCount), ""),
+		createColumn("可用率", fmt.Sprintf("**%.1f%%**", stats.AvailabilityRate), getRateColor(stats.AvailabilityRate)),
 	}
 	elements = append(elements, map[string]interface{}{
 		"tag":              "column_set",
@@ -780,8 +780,8 @@ func buildStatisticsCard(stats *Statistics) []map[string]interface{} {
 
 	// 第二行：正常和异常
 	row2 := []map[string]interface{}{
-		createColumn("✅ 正常", fmt.Sprintf("**%d**", stats.UpCount), "green"),
-		createColumn("❌ 异常", fmt.Sprintf("**%d**", stats.DownCount), "red"),
+		createColumn("正常", fmt.Sprintf("**%d**", stats.UpCount), "green"),
+		createColumn("异常", fmt.Sprintf("**%d**", stats.DownCount), "red"),
 	}
 	elements = append(elements, map[string]interface{}{
 		"tag":              "column_set",
