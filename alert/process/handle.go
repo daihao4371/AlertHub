@@ -47,8 +47,8 @@ func HandleAlert(ctx *ctx.Context, processType string, faultCenter models.FaultC
 				return nil
 			}
 
-			// 获取当前事件等级对应的 Hook、Sign 和 EnterpriseApiConfig
-			Hook, Sign, enterpriseApiConfig := getNoticeHookUrlAndSign(noticeData, severity)
+			// 获取当前事件等级对应的 Hook、Sign、InternalSmsConfig 和 EnterpriseApiConfig
+			Hook, Sign, internalSmsConfig, enterpriseApiConfig := getNoticeHookAndConfigs(noticeData, severity)
 
 			for _, event := range events {
 				// 对于告警事件，更新 LastSendTime
@@ -100,6 +100,7 @@ func HandleAlert(ctx *ctx.Context, processType string, faultCenter models.FaultC
 					Content:             content,
 					PhoneNumber:         phoneNumber,
 					Sign:                Sign,
+					InternalSmsConfig:   internalSmsConfig,
 					EnterpriseApiConfig: enterpriseApiConfig,
 					ReceiverAccounts:    receiverAccounts,
 				})
@@ -169,45 +170,67 @@ func getNoticeData(ctx *ctx.Context, tenantId, noticeId string) (models.AlertNot
 	return ctx.DB.Notice().Get(tenantId, noticeId)
 }
 
-// getNoticeHookUrlAndSign 获取事件等级对应的 Hook 和 Sign
-// 返回: Hook URL, Sign, EnterpriseApiConfig
-func getNoticeHookUrlAndSign(notice models.AlertNotice, severity string) (string, string, *models.DingDingEnterpriseApiConfig) {
-	if notice.Routes != nil {
-		for _, route := range notice.Routes {
-			if route.Severity == severity {
-				// 如果路由策略中配置了企业内部API，使用路由策略的配置
-				if route.EnterpriseApiConfig != nil && route.EnterpriseApiConfig.EnablePersonalNotification {
-					return route.Hook, route.Sign, route.EnterpriseApiConfig
-				}
-				// 否则使用默认的企业内部API配置（如果存在）
-				if notice.EnterpriseApiConfig != nil && notice.EnterpriseApiConfig.EnablePersonalNotification {
-					return route.Hook, route.Sign, notice.EnterpriseApiConfig
-				}
-				return route.Hook, route.Sign, nil
-			}
+// findRouteBySeverity 根据告警等级查找匹配的路由配置
+// 如果找到匹配的路由则返回该路由，否则返回 nil
+func findRouteBySeverity(routes []models.Route, severity string) *models.Route {
+	if routes == nil {
+		return nil
+	}
+	for i := range routes {
+		if routes[i].Severity == severity {
+			return &routes[i]
 		}
 	}
-	// 使用默认Hook，检查是否配置了企业内部API
-	if notice.EnterpriseApiConfig != nil && notice.EnterpriseApiConfig.EnablePersonalNotification {
-		return notice.DefaultHook, notice.DefaultSign, notice.EnterpriseApiConfig
+	return nil
+}
+
+// mergeEnterpriseApiConfig 合并企业API配置
+// 优先使用路由配置，如果路由未配置则使用默认配置
+func mergeEnterpriseApiConfig(routeConfig, defaultConfig *models.DingDingEnterpriseApiConfig) *models.DingDingEnterpriseApiConfig {
+	if routeConfig != nil && routeConfig.EnablePersonalNotification {
+		return routeConfig
 	}
-	return notice.DefaultHook, notice.DefaultSign, nil
+	if defaultConfig != nil && defaultConfig.EnablePersonalNotification {
+		return defaultConfig
+	}
+	return nil
+}
+
+// getNoticeHookAndConfigs 获取事件等级对应的 Hook、Sign、InternalSmsConfig 和 EnterpriseApiConfig
+// 返回: Hook, Sign, InternalSmsConfig, EnterpriseApiConfig
+func getNoticeHookAndConfigs(notice models.AlertNotice, severity string) (string, string, *models.InternalSmsConfig, *models.DingDingEnterpriseApiConfig) {
+	// 查找匹配的路由配置
+	route := findRouteBySeverity(notice.Routes, severity)
+	if route == nil {
+		// 未找到匹配路由，使用默认配置
+		enterpriseApiConfig := mergeEnterpriseApiConfig(nil, notice.EnterpriseApiConfig)
+		return notice.DefaultHook, notice.DefaultSign, notice.InternalSmsConfig, enterpriseApiConfig
+	}
+
+	// 使用路由配置，合并内部短信配置
+	internalSmsConfig := notice.InternalSmsConfig
+	if route.InternalSmsConfig != nil {
+		internalSmsConfig = route.InternalSmsConfig
+	}
+
+	// 合并企业API配置
+	enterpriseApiConfig := mergeEnterpriseApiConfig(route.EnterpriseApiConfig, notice.EnterpriseApiConfig)
+
+	return route.Hook, route.Sign, internalSmsConfig, enterpriseApiConfig
 }
 
 // getNoticeEmail 获取事件等级对应的 Email
 func getNoticeEmail(notice models.AlertNotice, severity string) models.Email {
-	if notice.Routes != nil {
-		for _, route := range notice.Routes {
-			if route.Severity == severity {
-				return models.Email{
-					Subject: notice.Email.Subject,
-					To:      route.To,
-					CC:      route.CC,
-				}
-			}
-		}
+	route := findRouteBySeverity(notice.Routes, severity)
+	if route == nil {
+		return notice.Email
 	}
-	return notice.Email
+
+	return models.Email{
+		Subject: notice.Email.Subject,
+		To:      route.To,
+		CC:      route.CC,
+	}
 }
 
 type WebhookContent struct {

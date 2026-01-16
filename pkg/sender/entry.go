@@ -38,6 +38,8 @@ type (
 		Sign string `json:"sign,omitempty"`
 		// 企业内部API配置（仅钉钉使用）
 		EnterpriseApiConfig *models.DingDingEnterpriseApiConfig `json:"enterpriseApiConfig,omitempty"`
+		// 内部短信网关配置
+		InternalSmsConfig *models.InternalSmsConfig `json:"internalSmsConfig,omitempty"`
 		// 接收者账号列表（钉钉ID，仅企业内部API使用）
 		ReceiverAccounts []string `json:"receiverAccounts,omitempty"`
 	}
@@ -56,8 +58,15 @@ const RobotTestContent = "🎉 AlertHub 告警通道配置成功！\n\n" +
 
 // Sender 发送通知的主函数
 func Sender(ctx *ctx.Context, sendParams SendParams) error {
+	// 根据通知类型和配置决定使用哪个发送器
+	noticeType := sendParams.NoticeType
+	if noticeType == "SMS" && sendParams.InternalSmsConfig != nil {
+		// 如果是SMS类型且有内部短信配置，使用内部短信发送器
+		noticeType = "InternalSMS"
+	}
+
 	// 根据通知类型获取对应的发送器
-	sender, err := senderFactory(sendParams.NoticeType)
+	sender, err := senderFactory(noticeType)
 	if err != nil {
 		return fmt.Errorf("Send alarm failed, %s", err.Error())
 	}
@@ -76,14 +85,21 @@ func Sender(ctx *ctx.Context, sendParams SendParams) error {
 
 // Tester 发送测试消息
 func Tester(ctx *ctx.Context, sendParams SendParams) error {
-	sender, err := senderFactory(sendParams.NoticeType)
+	// 根据通知类型和配置决定使用哪个发送器
+	noticeType := sendParams.NoticeType
+	if noticeType == "SMS" && sendParams.InternalSmsConfig != nil {
+		// 如果是SMS类型且有内部短信配置，使用内部短信发送器
+		noticeType = "InternalSMS"
+	}
+
+	sender, err := senderFactory(noticeType)
 	if err != nil {
 		return fmt.Errorf("Send alarm failed, %s", err.Error())
 	}
 
 	// 发送通知
 	if err := sender.Test(sendParams); err != nil {
-		return fmt.Errorf("Test alarm failed to %s, err: %s", sendParams.NoticeType, err.Error())
+		return fmt.Errorf("Test alarm failed to %s, err: %s", noticeType, err.Error())
 	}
 
 	return nil
@@ -110,6 +126,8 @@ func senderFactory(noticeType string) (SendInter, error) {
 		return NewSlackSender(), nil
 	case "SMS":
 		return NewSmsSender(), nil
+	case "InternalSMS":
+		return NewInternalSmsSender(), nil
 	default:
 		return nil, fmt.Errorf("无效的通知类型: %s", noticeType)
 	}

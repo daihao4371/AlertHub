@@ -64,6 +64,7 @@ func (n noticeService) Create(req interface{}) (interface{}, interface{}) {
 		Email:               r.Email,
 		PhoneNumber:         r.PhoneNumber,
 		EnterpriseApiConfig: r.EnterpriseApiConfig,
+		InternalSmsConfig:   r.InternalSmsConfig,
 		UpdateAt:            time.Now().Unix(),
 		UpdateBy:            r.UpdateBy,
 	})
@@ -88,6 +89,7 @@ func (n noticeService) Update(req interface{}) (interface{}, interface{}) {
 		Email:               r.Email,
 		PhoneNumber:         r.PhoneNumber,
 		EnterpriseApiConfig: r.EnterpriseApiConfig,
+		InternalSmsConfig:   r.InternalSmsConfig,
 		UpdateAt:            time.Now().Unix(),
 		UpdateBy:            r.UpdateBy,
 	})
@@ -201,20 +203,41 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 		Error string
 	}
 
-	err := sender.Tester(n.ctx, sender.SendParams{
-		NoticeType:          r.NoticeType,
-		NoticeName:          r.Name, // 传递通知对象名称，用于识别关键词
-		Hook:                r.DefaultHook,
-		Email:               r.Email,
-		Sign:                r.DefaultSign,
-		PhoneNumber:         r.PhoneNumber,
-		EnterpriseApiConfig: r.EnterpriseApiConfig,
-	})
-	if err != nil {
-		errList = append(errList, struct {
-			Hook  string
-			Error string
-		}{Hook: "config-masked", Error: err.Error()})
+	// 对于SMS类型，检查是否配置了短信方式
+	if r.NoticeType == "SMS" {
+		if r.DefaultHook == "" && r.InternalSmsConfig == nil {
+			// 检查路由中是否有配置
+			hasConfig := false
+			for _, route := range r.Routes {
+				if route.Hook != "" || route.InternalSmsConfig != nil {
+					hasConfig = true
+					break
+				}
+			}
+			if !hasConfig {
+				return nil, errors.New("SMS类型通知未配置任何短信方式，请配置DefaultHook（外部短信服务）或InternalSmsConfig（内部短信网关）")
+			}
+		}
+	}
+
+	// 仅当配置了默认Hook或InternalSmsConfig时才测试默认配置
+	if r.DefaultHook != "" || r.InternalSmsConfig != nil {
+		err := sender.Tester(n.ctx, sender.SendParams{
+			NoticeType:          r.NoticeType,
+			NoticeName:          r.Name, // 传递通知对象名称，用于识别关键词
+			Hook:                r.DefaultHook,
+			Email:               r.Email,
+			Sign:                r.DefaultSign,
+			PhoneNumber:         r.PhoneNumber,
+			EnterpriseApiConfig: r.EnterpriseApiConfig,
+			InternalSmsConfig:   r.InternalSmsConfig, // 传递内部短信网关配置
+		})
+		if err != nil {
+			errList = append(errList, struct {
+				Hook  string
+				Error string
+			}{Hook: "config-masked", Error: err.Error()})
+		}
 	}
 
 	for _, route := range r.Routes {
@@ -222,6 +245,16 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 		routeEnterpriseApiConfig := route.EnterpriseApiConfig
 		if routeEnterpriseApiConfig == nil {
 			routeEnterpriseApiConfig = r.EnterpriseApiConfig
+		}
+		// 路由策略中的InternalSmsConfig优先，如果没有则使用默认配置
+		routeInternalSmsConfig := route.InternalSmsConfig
+		if routeInternalSmsConfig == nil {
+			routeInternalSmsConfig = r.InternalSmsConfig
+		}
+
+		// 仅当路由配置了Hook或InternalSmsConfig时才测试
+		if route.Hook == "" && routeInternalSmsConfig == nil {
+			continue
 		}
 
 		err := sender.Tester(n.ctx, sender.SendParams{
@@ -233,7 +266,9 @@ func (n noticeService) Test(req interface{}) (interface{}, interface{}) {
 				CC: route.CC,
 			},
 			Sign:                route.Sign,
+			PhoneNumber:         route.To, // 短信发送时使用To字段作为电话号码
 			EnterpriseApiConfig: routeEnterpriseApiConfig,
+			InternalSmsConfig:   routeInternalSmsConfig, // 传递内部短信网关配置
 		})
 		if err != nil {
 			errList = append(errList, struct {
