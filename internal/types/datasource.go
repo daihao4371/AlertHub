@@ -14,34 +14,36 @@ const (
 type RequestDatasourceCreate struct {
 	TenantId         string                    `json:"tenantId"`
 	Name             string                    `json:"name"`
-	Labels           map[string]interface{}    `json:"labels"` // 额外标签，会添加到事件Metric中，可用于区分数据来源；
+	Labels           map[string]interface{}    `json:"labels"` // 额外标签，会添加到事件Metric中，可用于区分数据来源
 	Type             string                    `json:"type"`
 	HTTP             models.HTTP               `json:"http"`
 	Auth             models.Auth               `json:"Auth"`
-	DsAliCloudConfig models.DsAliCloudConfig   `json:"dsAliCloudConfig" `
-	AWSCloudWatch    models.AWSCloudWatch      `json:"awsCloudwatch" `
+	DsAliCloudConfig models.DsAliCloudConfig   `json:"dsAliCloudConfig"`
+	AWSCloudWatch    models.AWSCloudWatch      `json:"awsCloudwatch"`
 	ClickHouseConfig models.DsClickHouseConfig `json:"clickhouseConfig"`
+	ConsulConfig     models.DsConsulConfig     `json:"consulConfig"`
 	Description      string                    `json:"description"`
 	KubeConfig       string                    `json:"kubeConfig"`
 	UpdateBy         string                    `json:"updateBy"`
-	Enabled          *bool                     `json:"enabled" `
+	Enabled          *bool                     `json:"enabled"`
 }
 
 type RequestDatasourceUpdate struct {
 	TenantId         string                    `json:"tenantId"`
 	ID               string                    `json:"id"`
 	Name             string                    `json:"name"`
-	Labels           map[string]interface{}    `json:"labels" ` // 额外标签，会添加到事件Metric中，可用于区分数据来源；
+	Labels           map[string]interface{}    `json:"labels"` // 额外标签，会添加到事件Metric中，可用于区分数据来源
 	Type             string                    `json:"type"`
 	HTTP             models.HTTP               `json:"http"`
 	Auth             models.Auth               `json:"Auth"`
-	DsAliCloudConfig models.DsAliCloudConfig   `json:"dsAliCloudConfig" `
-	AWSCloudWatch    models.AWSCloudWatch      `json:"awsCloudwatch" `
+	DsAliCloudConfig models.DsAliCloudConfig   `json:"dsAliCloudConfig"`
+	AWSCloudWatch    models.AWSCloudWatch      `json:"awsCloudwatch"`
 	ClickHouseConfig models.DsClickHouseConfig `json:"clickhouseConfig"`
+	ConsulConfig     models.DsConsulConfig     `json:"consulConfig"`
 	Description      string                    `json:"description"`
 	KubeConfig       string                    `json:"kubeConfig"`
 	UpdateBy         string                    `json:"updateBy"`
-	Enabled          *bool                     `json:"enabled" `
+	Enabled          *bool                     `json:"enabled"`
 }
 
 type RequestDatasourceQuery struct {

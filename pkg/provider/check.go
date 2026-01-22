@@ -1,10 +1,12 @@
 package provider
 
 import (
+	"alertHub/internal/models"
+	consulclient "alertHub/pkg/consul"
 	"context"
 	"fmt"
+
 	"github.com/zeromicro/go-zero/core/logc"
-	"alertHub/internal/models"
 )
 
 // HealthChecker 统一健康检查接口
@@ -47,12 +49,57 @@ var datasourceFactories = map[string]ClientFactory{
 	"ClickHouse": func(ds models.AlertDataSource) (HealthChecker, error) {
 		return NewClickHouseClient(context.Background(), ds)
 	},
+	"consul": func(ds models.AlertDataSource) (HealthChecker, error) {
+		return NewConsulHealthChecker(ds)
+	},
 }
 
 // CloudWatchDummyChecker 云监控哑检查器
 type CloudWatchDummyChecker struct{}
 
 func (c *CloudWatchDummyChecker) Check() (bool, error) {
+	return true, nil
+}
+
+// ConsulHealthChecker Consul 健康检查器
+type ConsulHealthChecker struct {
+	client *consulclient.Client
+}
+
+// NewConsulHealthChecker 创建 Consul 健康检查器
+func NewConsulHealthChecker(ds models.AlertDataSource) (*ConsulHealthChecker, error) {
+	// 获取 Consul 配置
+	consulConfig := ds.ConsulConfig
+
+	// 验证并获取 Address
+	if consulConfig.Address == "" {
+		return nil, fmt.Errorf("Consul 地址不能为空，请检查配置中的 address 字段")
+	}
+
+	address := consulConfig.Address
+
+	// 使用组合后的地址创建 Consul 客户端
+	config := consulclient.ClientConfig{
+		Address: address,
+		Token:   consulConfig.Token,
+	}
+
+	client, err := consulclient.NewClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("创建 Consul 客户端失败: %w", err)
+	}
+
+	return &ConsulHealthChecker{
+		client: client,
+	}, nil
+}
+
+// Check 执行 Consul 健康检查
+func (c *ConsulHealthChecker) Check() (bool, error) {
+	err := c.client.HealthCheck(context.Background())
+	if err != nil {
+		return false, err
+	}
 	return true, nil
 }
 
