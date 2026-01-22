@@ -57,6 +57,18 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/casbin/initDefaultPermissions", "POST", "初始化默认权限", "权限管理"},
 		{"/api/w8t/casbin/getApiPermissions", "GET", "获取API权限列表", "权限管理"},
 
+		// Consul 服务发现
+		{"/api/w8t/consul/targets", "GET", "获取目标机器列表", "Consul服务发现"},
+		{"/api/w8t/consul/targets/:id", "GET", "获取目标详情", "Consul服务发现"},
+		{"/api/w8t/consul/targets/register", "POST", "手动注册服务到Consul", "Consul服务发现"},
+		{"/api/w8t/consul/targets/:id/deregister", "POST", "注销目标机器", "Consul服务发现"},
+		{"/api/w8t/consul/targets/:id/reregister", "POST", "重新上线已注销的目标", "Consul服务发现"},
+		{"/api/w8t/consul/sync", "POST", "同步Consul目标", "Consul服务发现"},
+		{"/api/w8t/consul/targets/by-tag", "GET", "按标签查询目标", "Consul服务发现"},
+		{"/api/w8t/consul/targets/by-job-tag", "GET", "按Job和标签查询目标", "Consul服务发现"},
+		{"/api/w8t/consul/targets/:id/tags", "POST", "更新目标标签", "Consul服务发现"},
+		{"/api/w8t/consul/offline-logs", "GET", "获取注销历史记录列表", "Consul服务发现"},
+
 		// 客户端管理
 		{"/api/w8t/c/getJaegerService", "GET", "获取Jaeger服务", "客户端管理"},
 

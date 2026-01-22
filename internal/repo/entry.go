@@ -40,6 +40,7 @@ type (
 		ExporterMonitor() InterExporterMonitorRepo
 		ThirdPartyWebhook() InterThirdPartyWebhookRepo
 		ThirdPartyAlert() InterThirdPartyAlertRepo
+		Consul() InterConsulRepo
 	}
 )
 
@@ -93,4 +94,7 @@ func (e *entryRepo) ThirdPartyWebhook() InterThirdPartyWebhookRepo {
 }
 func (e *entryRepo) ThirdPartyAlert() InterThirdPartyAlertRepo {
 	return newThirdPartyAlertRepo(e.db, e.g)
+}
+func (e *entryRepo) Consul() InterConsulRepo {
+	return newConsulRepoInterface(e.db, e.g)
 }
