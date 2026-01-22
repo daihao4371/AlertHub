@@ -507,6 +507,7 @@ func (datasourceController datasourceController) Ping(ctx *gin.Context) {
 			DsAliCloudConfig: r.DsAliCloudConfig,
 			AWSCloudWatch:    r.AWSCloudWatch,
 			ClickHouseConfig: r.ClickHouseConfig,
+			ConsulConfig:     r.ConsulConfig,
 			Description:      r.Description,
 			KubeConfig:       r.KubeConfig,
 			Enabled:          r.Enabled,

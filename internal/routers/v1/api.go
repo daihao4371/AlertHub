@@ -53,6 +53,7 @@ func Router(engine *gin.Engine) {
 			api.ProcessTraceController.API(w8t)
 			api.ThirdPartyWebhookController.API(w8t) // 第三方Webhook管理API
 			api.ThirdPartyAlertController.API(w8t)   // 第三方告警查询API
+			api.ConsulController.API(w8t)            // Consul服务发现管理API
 		}
 
 		oidc := v1.Group("oidc")

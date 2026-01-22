@@ -44,6 +44,7 @@ var (
 	ProcessTraceService        InterProcessTraceService        // 处理流程追踪服务
 	ThirdPartyWebhookService   InterThirdPartyWebhookService   // 第三方Webhook管理服务
 	ThirdPartyAlertService     InterThirdPartyAlertService     // 第三方告警接收服务
+	ConsulService              InterConsulService              // Consul服务发现管理服务
 )
 
 func NewServices(ctx *ctx.Context) {
@@ -84,4 +85,5 @@ func NewServices(ctx *ctx.Context) {
 	DashboardStatisticsService = newDashboardStatisticsService(ctx) // 初始化首页统计服务
 	ThirdPartyWebhookService = newInterThirdPartyWebhookService(ctx) // 初始化第三方Webhook管理服务
 	ThirdPartyAlertService = newInterThirdPartyAlertService(ctx)     // 初始化第三方告警接收服务
+	ConsulService = newInterConsulService(ctx)                      // 初始化Consul服务发现管理服务
 }

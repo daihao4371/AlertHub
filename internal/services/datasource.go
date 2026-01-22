@@ -1,13 +1,13 @@
 package services
 
 import (
-	"fmt"
-	"time"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/internal/types"
 	"alertHub/pkg/provider"
 	"alertHub/pkg/tools"
+	"fmt"
+	"time"
 )
 
 type datasourceService struct {
@@ -30,8 +30,28 @@ func newInterDatasourceService(ctx *ctx.Context) InterDatasourceService {
 	}
 }
 
+// normalizeConsulConfig 标准化 Consul 配置，兼容旧的 host:port 格式和新的 address 格式
+func normalizeConsulConfig(config models.DsConsulConfig) models.DsConsulConfig {
+	// 如果已有完整的 Address，直接返回
+	if config.Address != "" {
+		return config
+	}
+
+	// 如果 Address 为空但有 Host 和 Port（兼容旧的格式），自动组合成 Address
+	if config.Host != "" && config.Port > 0 {
+		config.Address = fmt.Sprintf("%s:%d", config.Host, config.Port)
+		return config
+	}
+
+	// 如果 Address 和 Host 都为空，返回原配置（会由健康检查器捕获错误）
+	return config
+}
+
 func (ds datasourceService) Create(req interface{}) (interface{}, interface{}) {
 	dataSource := req.(*types.RequestDatasourceCreate)
+
+	// 标准化 Consul 配置
+	consulConfig := normalizeConsulConfig(dataSource.ConsulConfig)
 
 	data := models.AlertDataSource{
 		TenantId:         dataSource.TenantId,
@@ -44,6 +64,7 @@ func (ds datasourceService) Create(req interface{}) (interface{}, interface{}) {
 		DsAliCloudConfig: dataSource.DsAliCloudConfig,
 		AWSCloudWatch:    dataSource.AWSCloudWatch,
 		ClickHouseConfig: dataSource.ClickHouseConfig,
+		ConsulConfig:     consulConfig,
 		Description:      dataSource.Description,
 		KubeConfig:       dataSource.KubeConfig,
 		UpdateBy:         dataSource.UpdateBy,
@@ -67,6 +88,9 @@ func (ds datasourceService) Create(req interface{}) (interface{}, interface{}) {
 func (ds datasourceService) Update(req interface{}) (interface{}, interface{}) {
 	dataSource := req.(*types.RequestDatasourceUpdate)
 
+	// 标准化 Consul 配置
+	consulConfig := normalizeConsulConfig(dataSource.ConsulConfig)
+
 	data := models.AlertDataSource{
 		TenantId:         dataSource.TenantId,
 		ID:               dataSource.ID,
@@ -78,6 +102,7 @@ func (ds datasourceService) Update(req interface{}) (interface{}, interface{}) {
 		DsAliCloudConfig: dataSource.DsAliCloudConfig,
 		AWSCloudWatch:    dataSource.AWSCloudWatch,
 		ClickHouseConfig: dataSource.ClickHouseConfig,
+		ConsulConfig:     consulConfig,
 		Description:      dataSource.Description,
 		KubeConfig:       dataSource.KubeConfig,
 		UpdateBy:         dataSource.UpdateBy,
