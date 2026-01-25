@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"
 	"alertHub/pkg/response"
@@ -22,6 +23,7 @@ func Service(ctx *gin.Context, fu func() (interface{}, interface{})) {
 func BindJson(ctx *gin.Context, req interface{}) {
 	err := ctx.ShouldBindJSON(req)
 	if err != nil {
+		logc.Error(context.Background(), fmt.Sprintf("JSON 解析失败: %v", err))
 		response.Fail(ctx, err.Error(), "failed")
 		ctx.Abort()
 		return

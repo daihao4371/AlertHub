@@ -1,10 +1,10 @@
 package main
 
 import (
-	"net/http"
-	_ "net/http/pprof"
 	"alertHub/initialization"
 	"alertHub/internal/global"
+	"net/http"
+	_ "net/http/pprof"
 )
 
 var Version string

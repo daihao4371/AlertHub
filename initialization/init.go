@@ -79,7 +79,16 @@ func InitBasic() {
 	}
 
 	if r.AiConfig.GetEnable() {
-		client, err := ai.NewAiClient(&r.AiConfig)
+		// Convert models.AiConfig to
+		// ai.AiConfig for use with NewAiClient
+		aiConfig := &ai.AiConfig{
+			Url:       r.AiConfig.Url,
+			ApiKey:    r.AiConfig.AppKey,
+			Model:     r.AiConfig.Model,
+			Timeout:   r.AiConfig.Timeout,
+			MaxTokens: r.AiConfig.MaxTokens,
+		}
+		client, err := ai.NewAiClient(aiConfig)
 		if err != nil {
 			logc.Error(ctx.Ctx, fmt.Sprintf("创建 Ai 客户端失败: %s", err.Error()))
 			return
