@@ -7,7 +7,7 @@ imagePullPolicy: IfNotPresent
 
 service:
   image:
-    repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/watchalert
+    repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/alerthub
     tag: "latest"
 
   resources:
@@ -28,7 +28,7 @@ service:
       port: 3306
       user: root
       pass: 123456
-      dbName: watchalert
+      dbName: alerthub
       timeout: 10s
     
     Redis:
@@ -71,7 +71,7 @@ service:
 
 web:
   image:
-    repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/watchalert-web
+    repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/alerthub-web
     tag: "latest"
 
   resources:
@@ -123,7 +123,7 @@ web:
         proxy_request_buffering off;
         proxy_ssl_server_name on;
         proxy_ssl_protocols TLSv1.2;
-        proxy_pass http://{{ include "watchalert.componentName" (dict "root" . "component" "service") }}:9001;
+        proxy_pass http://{{ include "alerthub.componentName" (dict "root" . "component" "service") }}:9001;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -150,7 +150,7 @@ web:
     annotations:
       kubernetes.io/ingress.class: nginx
     hosts:
-      - host: watchalert.x.com
+      - host: alerthub.x.com
         paths:
           - path: /
             pathType: ImplementationSpecific
@@ -170,7 +170,7 @@ job:
     host: "10.10.217.225"
     username: root
     password: 123456
-    database: watchalert
+    database: alerthub
 
 mysql:
   enabled:  false
@@ -180,8 +180,8 @@ mysql:
     tag: "8.0"
 
   auth:
-    password: w8t.123
-    database: watchalert
+    password: 123456
+    database: alerthub
 
   # 指定 MySQL Pod 的调度节点（示例：{"kubernetes.io/hostname": "node-name"}）
   nodeSelector: {}
