@@ -63,7 +63,15 @@ func (a settingService) Save(req interface{}) (interface{}, interface{}) {
 	}
 
 	if r.AiConfig.GetEnable() {
-		client, err := ai.NewAiClient(&r.AiConfig)
+		// Convert models.AiConfig to ai.AiConfig for use with NewAiClient
+		aiConfig := &ai.AiConfig{
+			Url:       r.AiConfig.Url,
+			ApiKey:    r.AiConfig.AppKey,
+			Model:     r.AiConfig.Model,
+			Timeout:   r.AiConfig.Timeout,
+			MaxTokens: r.AiConfig.MaxTokens,
+		}
+		client, err := ai.NewAiClient(aiConfig)
 		if err != nil {
 			return nil, err
 		}
