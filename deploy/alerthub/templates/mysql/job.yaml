@@ -1,7 +1,8 @@
+{{- if .Values.job.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ include "watchalert.componentName" (dict "root" . "component" "init-job") }}
+  name: {{ include "alerthub.componentName" (dict "root" . "component" "init-job") }}
   namespace: {{ .Release.Namespace }}
 spec:
   template:
@@ -15,7 +16,7 @@ spec:
             - until nc -z -v -w 30 {{ default (printf "%s-mysql" .Release.Name) .Values.job.mysql.host }} 3306; do echo "Waiting for MySQL..."; sleep 3; done;
 
       containers:
-        - name: {{ include "watchalert.componentName" (dict "root" . "component" "init-job") }}
+        - name: {{ include "alerthub.componentName" (dict "root" . "component" "init-job") }}
           image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           env:
@@ -27,6 +28,16 @@ spec:
               value: {{ .Values.job.mysql.password | quote }}
             - name: MYSQL_DATABASE
               value: {{ .Values.job.mysql.database | quote }}
+            - name: IMPORT_NOTICE_TEMPLATE
+              value: {{ .Values.job.imports.noticeTemplate | quote }}
+            - name: IMPORT_RULE_TEMPLATE_GROUPS
+              value: {{ .Values.job.imports.ruleTemplateGroups | quote }}
+            - name: IMPORT_RULE_TEMPLATES
+              value: {{ .Values.job.imports.ruleTemplates | quote }}
+            - name: IMPORT_TENANTS
+              value: {{ .Values.job.imports.tenants | quote }}
+            - name: IMPORT_TENANTS_LINKED_USERS
+              value: {{ .Values.job.imports.tenantsLinkedUsers | quote }}
           volumeMounts:
             - name: config
               mountPath: /sql
@@ -35,5 +46,6 @@ spec:
       volumes:
         - name: config
           configMap:
-            name: {{ include "watchalert.componentName" (dict "root" . "component" "init-config") }}
+            name: {{ include "alerthub.componentName" (dict "root" . "component" "init-config") }}
       restartPolicy: OnFailure
+{{- end }}
