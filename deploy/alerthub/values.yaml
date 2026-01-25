@@ -162,6 +162,9 @@ serviceAccount:
   name: ""
 
 job:
+  # 是否启用初始化 Job (用于导入 SQL 数据)
+  enabled: true
+
   image:
     repository: docker.1ms.run/mysql
     tag: "8.0"
@@ -171,6 +174,14 @@ job:
     username: root
     password: 123456
     database: alerthub
+
+  # SQL 导入开关控制 (1 表示导入, 0 表示跳过)
+  imports:
+    noticeTemplate: "1"
+    ruleTemplateGroups: "1"
+    ruleTemplates: "1"
+    tenants: "1"
+    tenantsLinkedUsers: "1"
 
 mysql:
   enabled:  false
