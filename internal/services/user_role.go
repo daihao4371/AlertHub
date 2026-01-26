@@ -89,8 +89,35 @@ func (ur userRoleService) Delete(req interface{}) (interface{}, interface{}) {
 }
 
 // SetRolePermissions 为角色分配API权限
+// 同时更新 user_role_apis 表和 casbin_rule 表，确保权限数据一致
 func (ur userRoleService) SetRolePermissions(roleID string, apiIDs []int64) error {
-	return ur.ctx.DB.UserRole().SetRoleApis(roleID, apiIDs)
+	// 1. 更新 user_role_apis 关联表
+	if err := ur.ctx.DB.UserRole().SetRoleApis(roleID, apiIDs); err != nil {
+		return fmt.Errorf("更新角色API关联失败: %w", err)
+	}
+
+	// 2. 获取角色关联的所有 API 详情，用于同步 Casbin 规则
+	apis, err := ur.ctx.DB.UserRole().GetRoleApis(roleID)
+	if err != nil {
+		return fmt.Errorf("获取角色API列表失败: %w", err)
+	}
+
+	// 3. 转换为 PermissionInfo 格式并同步到 Casbin
+	var permissions []models.PermissionInfo
+	for _, api := range apis {
+		permissions = append(permissions, models.PermissionInfo{
+			Path:   api.Path,
+			Method: api.Method,
+			Group:  api.ApiGroup,
+		})
+	}
+
+	// 4. 同步更新 Casbin 权限规则
+	if err := CasbinPermissionService.SetRolePermissions(roleID, permissions); err != nil {
+		return fmt.Errorf("同步Casbin权限规则失败: %w", err)
+	}
+
+	return nil
 }
 
 // GetRolePermissions 获取角色的API权限
