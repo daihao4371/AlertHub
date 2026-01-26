@@ -17,7 +17,7 @@ type RequestUserCreate struct {
 	Role       string   `json:"role"`
 	CreateBy   string   `json:"create_by"`
 	CreateAt   int64    `json:"create_at"`
-	JoinDuty   string   `json:"joinDuty" `
+	JoinDuty   string   `json:"joinDuty"`
 	DutyUserId string   `json:"dutyUserId"`
 	Tenants    []string `json:"tenants" gorm:"tenants;serializer:json"`
 }
@@ -32,7 +32,7 @@ type RequestUserUpdate struct {
 	Role       string   `json:"role"`
 	CreateBy   string   `json:"create_by"`
 	CreateAt   int64    `json:"create_at"`
-	JoinDuty   string   `json:"joinDuty" `
+	JoinDuty   string   `json:"joinDuty"`
 	DutyUserId string   `json:"dutyUserId"`
 	Tenants    []string `json:"tenants" gorm:"tenants;serializer:json"`
 }
