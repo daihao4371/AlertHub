@@ -337,10 +337,37 @@ func (us userService) normalizeRole(role string) string {
 
 // addUserToTenant 添加用户到租户
 func (us userService) addUserToTenant(tenantId, userId, userName, userRole string) error {
-	return us.ctx.DB.Tenant().AddTenantLinkedUsers(tenantId,
+	// 先关联用户到租户
+	err := us.ctx.DB.Tenant().AddTenantLinkedUsers(tenantId,
 		[]models.TenantUser{{UserID: userId, UserName: userName}},
 		userRole,
 	)
+	if err != nil {
+		return err
+	}
+
+	// 然后确保该角色的权限在Casbin中已初始化
+	if userRole == "admin" {
+		// admin角色拥有所有权限
+		permissions := models.GetAllApiPermissions()
+		if err := services.CasbinPermissionService.SetRolePermissions(userRole, permissions); err != nil {
+			logc.Errorf(us.ctx.Ctx, "为admin角色初始化Casbin权限失败: %s", err.Error())
+		}
+	} else if userRole == "user" {
+		// user角色拥有基础权限
+		permissions := models.GetBasicApiPermissions()
+		if err := services.CasbinPermissionService.SetRolePermissions(userRole, permissions); err != nil {
+			logc.Errorf(us.ctx.Ctx, "为user角色初始化Casbin权限失败: %s", err.Error())
+		}
+	} else {
+		// 自定义角色时，给予基础权限
+		permissions := models.GetBasicApiPermissions()
+		if err := services.CasbinPermissionService.SetRolePermissions(userRole, permissions); err != nil {
+			logc.Errorf(us.ctx.Ctx, "为自定义角色 %s 初始化Casbin权限失败: %s", userRole, err.Error())
+		}
+	}
+
+	return nil
 }
 
 func (us userService) Update(req interface{}) (interface{}, interface{}) {
