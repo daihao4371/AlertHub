@@ -45,47 +45,48 @@ func (tr TenantRepo) Create(t models.Tenant) error {
 		return err
 	}
 
-	var users = []models.TenantUser{
-		{
-			UserID:   "admin",
-			UserName: "admin",
-		},
-	}
-
-	for _, u := range users {
+	// 尝试关联admin用户到新租户（如果admin用户存在）
+	adminUser, exists, err := tr.User().Get("admin", "", "")
+	if err == nil && exists {
 		err = tr.Tenant().CreateTenantLinkedUserRecord(
 			models.TenantLinkedUsers{
 				ID: t.ID,
 				Users: []models.TenantUser{
 					{
-						UserID:   u.UserID,
-						UserName: u.UserName,
+						UserID:   adminUser.UserId,
+						UserName: adminUser.UserName,
 						UserRole: "admin",
 					},
 				}})
 		if err != nil {
-			return err
+			logc.Errorf(context.Background(), "创建租户关联admin用户失败: %s", err.Error())
+			// 不返回错误，继续创建租户
 		}
 
-		userData, _, err := tr.User().Get(u.UserID, "", "")
-		if err != nil {
-			return err
-		}
-
-		userData.Tenants = append(userData.Tenants, t.ID)
-		err = tr.g.Updates(Updates{
-			Table: models.Member{},
-			Where: map[string]interface{}{
-				"user_id = ?": u.UserID,
-			},
-			Updates: userData,
-		})
-		if err != nil {
-			return err
+		// 更新admin用户的租户列表
+		if !tr.containsTenant(adminUser.Tenants, t.ID) {
+			adminUser.Tenants = append(adminUser.Tenants, t.ID)
+			_ = tr.g.Updates(Updates{
+				Table: models.Member{},
+				Where: map[string]interface{}{
+					"user_id = ?": adminUser.UserId,
+				},
+				Updates: adminUser,
+			})
 		}
 	}
 
 	return nil
+}
+
+// containsTenant 检查租户是否已在列表中
+func (tr TenantRepo) containsTenant(tenants []string, tenantId string) bool {
+	for _, t := range tenants {
+		if t == tenantId {
+			return true
+		}
+	}
+	return false
 }
 
 func (tr TenantRepo) Update(t models.Tenant) error {

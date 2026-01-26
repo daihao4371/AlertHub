@@ -92,17 +92,27 @@ func (os oidcService) CallBack(ctx *gin.Context, req interface{}) (interface{}, 
 	if ok {
 		logc.Infof(os.ctx.Ctx, fmt.Sprintf("用户 %s 已存在", result.Id))
 	} else {
+		userId := tools.RandUid()
 		err = os.ctx.DB.User().Create(models.Member{
-			UserId:   tools.RandUid(),
+			UserId:   userId,
 			UserName: result.Id,
 			Email:    result.Email,
 			Phone:    result.Attributes.PhoneNum,
 			Password: tools.GenerateHashPassword(types.OidcPassword),
 			CreateBy: "OIDC",
 			CreateAt: time.Now().Unix(),
+			Tenants:  []string{"default"},
 		})
 		if err != nil {
 			return nil, err
+		}
+
+		// 关联用户到default租户
+		if err := os.ctx.DB.Tenant().AddTenantLinkedUsers("default",
+			[]models.TenantUser{{UserID: userId, UserName: result.Id}},
+			"user",
+		); err != nil {
+			logc.Errorf(os.ctx.Ctx, "OIDC用户关联default租户失败: %s", err.Error())
 		}
 	}
 
