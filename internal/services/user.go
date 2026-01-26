@@ -184,18 +184,33 @@ func (us userService) buildUserModel(r *types.RequestUserCreate) models.Member {
 	}
 }
 
-// associateTenants 关联租户
+// associateTenants 关联用户到所有指定的租户
+// 遍历用户的租户列表，将用户添加到每个租户的关联记录中
 func (us userService) associateTenants(r *types.RequestUserCreate) error {
-	if !us.containsTenant(r.Tenants, "default") {
+	if len(r.Tenants) == 0 {
 		return nil
 	}
 
-	if err := us.ensureDefaultTenant(); err != nil {
-		return fmt.Errorf("准备默认租户失败: %w", err)
+	userRole := us.normalizeRole(r.Role)
+
+	// 遍历所有租户，将用户添加到每个租户
+	for _, tenantID := range r.Tenants {
+		// 如果是 default 租户，需要先确保租户存在
+		if tenantID == "default" {
+			if err := us.ensureDefaultTenant(); err != nil {
+				logc.Errorf(us.ctx.Ctx, "准备默认租户失败: %s", err.Error())
+				continue
+			}
+		}
+
+		// 将用户添加到租户
+		if err := us.addUserToTenant(tenantID, r.UserId, r.UserName, userRole); err != nil {
+			logc.Errorf(us.ctx.Ctx, "添加用户到租户 %s 失败: %s", tenantID, err.Error())
+			// 继续处理其他租户，不中断流程
+		}
 	}
 
-	userRole := us.normalizeRole(r.Role)
-	return us.addUserToTenant("default", r.UserId, r.UserName, userRole)
+	return nil
 }
 
 // ensureDefaultTenant 确保默认租户存在（使用事务和行锁确保原子性）
