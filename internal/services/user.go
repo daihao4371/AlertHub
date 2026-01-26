@@ -134,22 +134,18 @@ func (us userService) Register(req interface{}) (interface{}, interface{}) {
 
 // applyDefaults 应用默认值
 func (us userService) applyDefaults(r *types.RequestUserCreate) {
-	defaults := map[string]*string{
-		"UserId":   &r.UserId,
-		"CreateBy": &r.CreateBy,
-		"RealName": &r.RealName,
+	// 如果 UserId 为空，使用用户名作为 UserId 以保证唯一性
+	if r.UserId == "" {
+		r.UserId = r.UserName
 	}
 
-	defaultValues := map[string]string{
-		"UserId":   "888",
-		"CreateBy": "system",
-		"RealName": "超管",
+	// 应用其他默认值
+	if r.CreateBy == "" {
+		r.CreateBy = "system"
 	}
 
-	for field, ptr := range defaults {
-		if *ptr == "" {
-			*ptr = defaultValues[field]
-		}
+	if r.RealName == "" {
+		r.RealName = r.UserName
 	}
 
 	if len(r.Tenants) == 0 {
