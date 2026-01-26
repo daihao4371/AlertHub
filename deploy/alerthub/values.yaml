@@ -148,15 +148,16 @@ web:
 #    nodePort: 30080
 
   ingress:
-    enabled: false
-    className: ""
+    enabled: true
+    className: nginx
     annotations:
-      kubernetes.io/ingress.class: nginx
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/proxy-body-size: "2050m"
     hosts:
       - host: alerthub.x.com
         paths:
           - path: /
-            pathType: ImplementationSpecific
+            pathType: Prefix
     tls: []
 
 serviceAccount:
