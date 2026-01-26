@@ -2,18 +2,18 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "watchalert.componentName" (dict "root" . "component" "redis") }}
+  name: {{ include "alerthub.componentName" (dict "root" . "component" "redis") }}
   namespace: {{ .Release.Namespace }}
 spec:
-  serviceName: {{ include "watchalert.componentName" (dict "root" . "component" "redis") }}
+  serviceName: {{ include "alerthub.componentName" (dict "root" . "component" "redis") }}
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "watchalert.componentName" (dict "root" . "component" "redis") }}
+      app: {{ include "alerthub.componentName" (dict "root" . "component" "redis") }}
   template:
     metadata:
       labels:
-        app: {{ include "watchalert.componentName" (dict "root" . "component" "redis") }}
+        app: {{ include "alerthub.componentName" (dict "root" . "component" "redis") }}
     spec:
       {{- with .Values.redis.nodeSelector }}
       nodeSelector:
@@ -25,7 +25,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: {{ include "watchalert.componentName" (dict "root" . "component" "redis") }}
+        - name: {{ include "alerthub.componentName" (dict "root" . "component" "redis") }}
           command:
             - redis-server
             - /usr/local/etc/redis/redis.conf
@@ -47,7 +47,7 @@ spec:
       volumes:
         - name: redis-config
           configMap:
-            name: {{ include "watchalert.componentName" (dict "root" . "component" "redis-config") }}
+            name: {{ include "alerthub.componentName" (dict "root" . "component" "redis-config") }}
   {{- if .Values.redis.persistence.enabled }}
   volumeClaimTemplates:
     - metadata:

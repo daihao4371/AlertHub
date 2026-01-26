@@ -2,20 +2,20 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+  name: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
   namespace: {{ .Release.Namespace }}
   labels:
-    app: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+    app: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
 spec:
-  serviceName: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+  serviceName: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
   replicas: 1
   selector:
     matchLabels:
-      app: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+      app: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
   template:
     metadata:
       labels:
-        app: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+        app: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
     spec:
       {{- with .Values.mysql.nodeSelector }}
       nodeSelector:
@@ -27,7 +27,7 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
-        - name: {{ include "watchalert.componentName" (dict "root" . "component" "mysql") }}
+        - name: {{ include "alerthub.componentName" (dict "root" . "component" "mysql") }}
           image: {{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           env:
