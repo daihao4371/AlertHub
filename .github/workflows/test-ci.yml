@@ -21,14 +21,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@v3
-        with:
-          driver: docker-container
 
       - name: Check ACR credentials
         id: check_acr
@@ -48,7 +43,7 @@ jobs:
             echo "is_tag=true" >> $GITHUB_OUTPUT
             echo "version=${TAG_NAME}" >> $GITHUB_OUTPUT
             echo "✅ Tag推送: ${TAG_NAME}"
-            
+
             # 验证tag格式
             if [[ ! "${TAG_NAME}" =~ ^v[0-9] ]]; then
               echo "❌ 错误: tag格式不对: ${TAG_NAME}"
@@ -77,9 +72,9 @@ jobs:
           NAMESPACE="${{ secrets.ALIYUN_ACR_NAMESPACE || 'devops-dh' }}"
           REPO="alerthub"
           VERSION="${{ steps.version.outputs.version }}"
-          
+
           IMAGE_TAG="${REGISTRY}/${NAMESPACE}/${REPO}:${VERSION}"
-          
+
           echo "image_tag=${IMAGE_TAG}" >> $GITHUB_OUTPUT
           echo "📦 镜像标签: ${IMAGE_TAG}"
 
@@ -88,10 +83,12 @@ jobs:
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
-          push: false  # 测试环境不推送镜像
+          platforms: linux/amd64
+          push: false
           provenance: false
           sbom: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             VERSION=${{ steps.version.outputs.version }}
           tags: |
