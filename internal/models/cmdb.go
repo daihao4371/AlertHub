@@ -15,8 +15,8 @@ type CmdbHost struct {
 // 表名: cmdb_host_applications (GORM默认规则会自动转换为复数形式)
 type CmdbHostApplication struct {
 	ID         int64     `gorm:"column:id;primary_key;AUTO_INCREMENT" json:"id"`
-	HostID     int64     `gorm:"column:host_id;type:bigint;not null;index:idx_host_id" json:"hostId"`
-	AppName    string    `gorm:"column:app_name;type:varchar(200);not null;index:idx_app_name" json:"appName"`
+	HostID     int64     `gorm:"column:host_id;type:bigint;not null;uniqueIndex:uk_host_app" json:"hostId"`
+	AppName    string    `gorm:"column:app_name;type:varchar(200);not null;uniqueIndex:uk_host_app" json:"appName"`
 	OpsOwner   *string   `gorm:"column:ops_owner;type:varchar(100);index:idx_ops_owner" json:"opsOwner"`
 	DevOwner   *string   `gorm:"column:dev_owner;type:varchar(100);index:idx_dev_owner" json:"devOwner"`
 	DingDingId *string   `gorm:"column:dingding_id;type:varchar(100);index:idx_dingding_id" json:"dingDingId"` // 钉钉用户ID
