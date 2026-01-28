@@ -64,7 +64,6 @@ func (aiController aiController) Chat(ctx *gin.Context) {
 		ctx.Writer.Flush()
 	}
 
-	// 流式传输完成，发送结束信号
-	ctx.SSEvent("end", "done")
-	ctx.Writer.Flush()
+	// 流式传输完成，无需发送额外结束信号
+	// 前端通过 ReadableStream 的 done 状态即可检测流结束
 }
