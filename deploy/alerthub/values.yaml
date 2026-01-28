@@ -72,6 +72,22 @@ service:
   # 后端服务的 NodePort 配置
   # nodePort: 30001  # 取消注释以指定具体的 NodePort 端口号
 
+  # 后端服务的 Ingress 配置
+  ingress:
+    enabled: false
+    className: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "2050m"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "300"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "300"
+    hosts:
+      - host: alerthub-api.x.com
+        paths:
+          - path: /
+            pathType: Prefix
+    tls: []
+
 web:
   image:
     repository: registry.cn-hangzhou.aliyuncs.com/devops-dh/alerthub-web
