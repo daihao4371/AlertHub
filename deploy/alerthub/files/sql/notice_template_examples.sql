@@ -2,9 +2,9 @@ use watchalert;
 INSERT ignore INTO watchalert.notice_template_examples (id,name,description,template,enable_fei_shu_json_card,template_firing,template_recover,notice_type) VALUES
 	 ('nt-cqh3uppd6gvj2ctaqd60','飞书通知模版','发送飞书的普通消息模版','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
-【报警中】- WatchAlert 业务系统 🔥
+【报警中】- AlertHub 业务系统 🔥
 {{- else -}}
-【已恢复】- WatchAlert 业务系统 ✨
+【已恢复】- AlertHub 业务系统 ✨
 {{- end -}}
 {{- end }}
 
@@ -40,7 +40,7 @@ green
 {{ end }}
 
 {{- define "Footer" -}}
-🧑‍💻 WatchAlert - 运维团队
+🧑‍💻 AlertHub - 运维团队
 {{- end }}',0,'','','FeiShu'),
 	 ('nt-cqh4361d6gvj80netqk0','飞书卡片通知模版','发送飞书的高级消息卡片模版','',1,'{
   "elements": [
@@ -241,7 +241,7 @@ green
       "elements": [
         {
           "tag": "plain_text",
-          "content": "🧑‍💻 WatchAlert - 运维团队"
+          "content": "🧑‍💻 AlertHub - 运维团队"
         }
       ]
     }
@@ -465,7 +465,7 @@ green
       "elements": [
         {
           "tag": "plain_text",
-          "content": "🧑‍💻 WatchAlert - 运维团队"
+          "content": "🧑‍💻 AlertHub - 运维团队"
         }
       ]
     }
@@ -489,14 +489,14 @@ green
     "template": "red",
     "title": {
       "tag": "plain_text",
-      "content": "【报警中】- WatchAlert 业务系统 🔥"
+      "content": "【报警中】- AlertHub 业务系统 🔥"
     }
   },
   "body": {
     "elements": [
       { "tag": "markdown", "content": "**🤖 报警类型:** ${rule_name}\n**🫧 报警指纹:** ${fingerprint}\n**📌 报警等级:** ${severity}\n**🖥 报警主机:** ${labels.instance}\n**🕘 开始时间:** ${first_trigger_time_format}\n**👤 值班人员:** ${duty_user}\n**📝 报警事件:** ${annotations}\n[查看事件](http:\/\/localhost:3000\/faultCenter\/detail\/${faultCenterId}?tab=1&query=${rule_name})" },
       { "tag": "hr"},
-      { "tag": "markdown", "content": "🧑‍💻 WatchAlert - 运维团队"}
+      { "tag": "markdown", "content": "🧑‍💻 AlertHub - 运维团队"}
     ]
   }
 }','{
@@ -509,14 +509,14 @@ green
     "template": "green",
     "title": {
       "tag": "plain_text",
-      "content": "【已恢复】- WatchAlert 业务系统 ✨"
+      "content": "【已恢复】- AlertHub 业务系统 ✨"
     }
   },
   "body": {
     "elements": [
       { "tag": "markdown", "content": "**🤖 报警类型:** ${rule_name}\n**🫧 报警指纹:** ${fingerprint}\n**📌 报警等级:** ${severity}\n**🖥 报警主机:** ${labels.instance}\n**🕘 开始时间:** ${first_trigger_time_format}\n**🕘 恢复时间:** ${recover_time_format}\n**👤 值班人员:** ${duty_user}\n**📝 报警事件:** ${annotations}\n[查看事件](http:\/\/localhost:3000\/faultCenter\/detail\/${faultCenterId}?tab=1&query=${rule_name})" },
       { "tag": "hr"},
-      { "tag": "markdown", "content": "🧑‍💻 WatchAlert - 运维团队"}
+      { "tag": "markdown", "content": "🧑‍💻 AlertHub - 运维团队"}
     ]
   }
 }','FeiShu'),
@@ -550,9 +550,9 @@ green
 {{ end }}',0,'','','Email'),
 	 ('nt-crscirlvi7nhfu2tpf00','钉钉通知模版','发送钉钉的普通消息模版','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
-【报警中】- WatchAlert 业务系统 🔥
+【报警中】- AlertHub 业务系统 🔥
 {{- else -}}
-【已恢复】- WatchAlert 业务系统 ✨
+【已恢复】- AlertHub 业务系统 ✨
 {{- end -}}
 {{- end }}
 
@@ -588,13 +588,13 @@ green
 {{ end }}
 
 {{- define "Footer" -}}
-🧑‍💻 WatchAlert - 运维团队
+🧑‍💻 AlertHub - 运维团队
 {{- end }}',0,'','','DingDing'),
 	 ('nt-cte1re5vi7ngs77mh190','企微通知模版','发送企业微信的普通消息模版','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
-【报警中】- WatchAlert 业务系统 🔥
+【报警中】- AlertHub 业务系统 🔥
 {{- else -}}
-【已恢复】- WatchAlert 业务系统 ✨
+【已恢复】- AlertHub 业务系统 ✨
 {{- end -}}
 {{- end }}
 
@@ -630,13 +630,13 @@ green
 {{ end }}
 
 {{- define "Footer" -}}
-🧑‍💻 WatchAlert - 运维团队
+🧑‍💻 AlertHub - 运维团队
 {{- end }}',0,'','','WeChat'),
     ('nt-crscirlvi7nhbb2tpf01','日志通知模版','日志类告警通知模版','{{- define "Title" -}}
 {{- if not .IsRecovered -}}
-【报警中】- WatchAlert 业务系统 🔥
+【报警中】- AlertHub 业务系统 🔥
 {{- else -}}
-【已恢复】- WatchAlert 业务系统 ✨
+【已恢复】- AlertHub 业务系统 ✨
 {{- end -}}
 {{- end }}
 
@@ -667,5 +667,5 @@ green
 {{ end }}
 
 {{- define "Footer" -}}
-🧑‍💻 WatchAlert - 运维团队
+🧑‍💻 AlertHub - 运维团队
 {{- end }}',0,'','','FeiShu');
