@@ -102,8 +102,8 @@ web:
   config: |-
     server {
       listen 80;
-    
-      root /app;
+
+      root /usr/share/nginx/html;
       index index.html index.htm;
     
       location / {
