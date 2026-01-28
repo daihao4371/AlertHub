@@ -197,7 +197,7 @@ func BuildEnterpriseApiRequestPayload(secretKey, businessCode, robotCode string,
 		BusinessCode:    businessCode,
 		RobotCode:       robotCode,
 		ReceiverAccount: receiverAccountStr,
-		ReceiverType:    5, // 5=钉钉用户ID
+		ReceiverType:    2, // 5=钉钉用户ID
 	}
 	payload.Content.Title = title
 	payload.Content.Text = text
