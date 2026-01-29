@@ -1,11 +1,11 @@
 package api
 
 import (
+	"alertHub/pkg/response"
 	"context"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"
-	"alertHub/pkg/response"
 )
 
 func Service(ctx *gin.Context, fu func() (interface{}, interface{})) {

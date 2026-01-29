@@ -203,11 +203,11 @@ func InitCasbinPermissionsForExistingRoles(ctx *ctx.Context) error {
 				logc.Errorf(ctx.Ctx, "获取API总数失败: %s", err.Error())
 				continue
 			}
-			
+
 			// 如果admin权限数量少于API总数，说明权限不完整，需要重新初始化
 			if permissionCount < totalApiCount {
 				needsReinit = true
-				logc.Infof(ctx.Ctx, "检测到角色 %s (%s) 权限不完整: 现有%d个, 应有%d个, 将重新初始化", 
+				logc.Infof(ctx.Ctx, "检测到角色 %s (%s) 权限不完整: 现有%d个, 应有%d个, 将重新初始化",
 					role.ID, role.Name, permissionCount, totalApiCount)
 			}
 		}
@@ -354,7 +354,7 @@ func createCasbinIndexes(ctx *ctx.Context, db *gorm.DB) error {
 		CREATE UNIQUE INDEX idx_casbin_rule_unique 
 		ON casbin_rule (ptype, v0, v1(200), v2)
 	`
-	
+
 	if err := db.Exec(indexSQL).Error; err != nil {
 		// 如果索引已存在，忽略错误
 		if tools.ContainsAny(err.Error(), []string{"Duplicate key", "already exists", "重复"}) {
@@ -371,15 +371,15 @@ func createCasbinIndexes(ctx *ctx.Context, db *gorm.DB) error {
 // initApiRegistry 初始化API注册表
 func initApiRegistry(ctx *ctx.Context) error {
 	logc.Infof(ctx.Ctx, "开始初始化API注册表")
-	
+
 	// 创建API注册表实例
 	apiRegistry := registry.NewApiRegistry(ctx)
-	
+
 	// 注册所有API到数据库
 	if err := apiRegistry.RegisterToDatabase(); err != nil {
 		return fmt.Errorf("API注册表注册失败: %v", err)
 	}
-	
+
 	logc.Infof(ctx.Ctx, "API注册表初始化完成")
 	return nil
 }

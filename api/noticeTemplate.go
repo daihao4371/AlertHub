@@ -1,11 +1,11 @@
 package api
 
 import (
-	"errors"
 	"alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
 	"alertHub/pkg/tools"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 )

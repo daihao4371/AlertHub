@@ -1,6 +1,10 @@
 package consumer
 
 import (
+	"alertHub/alert/mute"
+	"alertHub/alert/process"
+	"alertHub/internal/ctx"
+	"alertHub/internal/models"
 	"context"
 	"fmt"
 	"regexp"
@@ -8,10 +12,6 @@ import (
 	"sort"
 	"sync"
 	"time"
-	"alertHub/alert/mute"
-	"alertHub/alert/process"
-	"alertHub/internal/ctx"
-	"alertHub/internal/models"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	"golang.org/x/sync/errgroup"

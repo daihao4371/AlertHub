@@ -1,7 +1,6 @@
 package alert
 
 import (
-	"context"
 	"alertHub/alert/consumer"
 	"alertHub/alert/eval"
 	"alertHub/alert/probing"
@@ -9,6 +8,7 @@ import (
 	"alertHub/internal/global"
 	"alertHub/pkg/client"
 	"alertHub/pkg/tools"
+	"context"
 
 	"github.com/zeromicro/go-zero/core/logc"
 )

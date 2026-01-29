@@ -1,9 +1,9 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
+	"github.com/gin-gonic/gin"
 )
 
 type systemController struct{}

@@ -129,7 +129,6 @@ func (processTraceController processTraceController) UpdateProcessStatus(ctx *gi
 	})
 }
 
-
 // UpdateAIAnalysis 更新AI分析结果
 // @Summary 更新AI分析结果
 // @Tags ProcessTrace

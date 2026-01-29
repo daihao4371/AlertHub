@@ -1,10 +1,10 @@
 package process
 
 import (
+	"alertHub/internal/models"
 	"context"
 	"fmt"
 	"github.com/zeromicro/go-zero/core/logc"
-	"alertHub/internal/models"
 )
 
 type ConditionEvaluator func(condition models.EvalCondition) bool

@@ -1,11 +1,11 @@
 package api
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	middleware "alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
+	"fmt"
+	"github.com/gin-gonic/gin"
 )
 
 type casbinPermissionController struct{}
@@ -29,14 +29,14 @@ func (casbinPermissionController casbinPermissionController) API(gin *gin.Router
 		c.POST("setRolePermissions", casbinPermissionController.SetRolePermissions)
 		c.GET("getRolePermissions", casbinPermissionController.GetRolePermissions)
 		c.DELETE("removeRolePermissions", casbinPermissionController.RemoveRolePermissions)
-		
+
 		// 用户权限查询
 		c.GET("getUserPermissions", casbinPermissionController.GetUserPermissions)
 		c.POST("checkPermission", casbinPermissionController.CheckPermission)
-		
+
 		// 权限初始化
 		c.POST("initDefaultPermissions", casbinPermissionController.InitDefaultPermissions)
-		
+
 		// API权限管理
 		c.GET("getApiPermissions", casbinPermissionController.GetApiPermissions)
 	}
@@ -91,7 +91,7 @@ func (casbinPermissionController casbinPermissionController) GetUserPermissions(
 		if tenantID == "" {
 			return nil, fmt.Errorf("租户ID不能为空")
 		}
-		
+
 		return services.CasbinPermissionService.GetUserAllPermissions(r.UserID, tenantID)
 	})
 }
@@ -107,7 +107,7 @@ func (casbinPermissionController casbinPermissionController) CheckPermission(ctx
 		if tenantID == "" {
 			return nil, fmt.Errorf("租户ID不能为空")
 		}
-		
+
 		hasPermission, err := services.CasbinPermissionService.CheckUserPermission(r.UserID, tenantID, r.ApiPath, r.Method)
 		if err != nil {
 			return nil, err
@@ -132,19 +132,19 @@ func (casbinPermissionController casbinPermissionController) InitDefaultPermissi
 		if tenantID == "" {
 			return nil, fmt.Errorf("租户ID不能为空")
 		}
-		
+
 		// 1. 确保所有API已注册到SysApi表
 		err := services.CasbinPermissionService.EnsureAllApisRegistered()
 		if err != nil {
 			return nil, fmt.Errorf("注册API失败: %v", err)
 		}
-		
+
 		// 2. 为admin角色分配所有权限
 		err = services.CasbinPermissionService.InitAdminPermissions()
 		if err != nil {
 			return nil, fmt.Errorf("初始化admin权限失败: %v", err)
 		}
-		
+
 		return "默认权限初始化成功", nil
 	})
 }

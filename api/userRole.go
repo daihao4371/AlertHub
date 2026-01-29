@@ -1,11 +1,11 @@
 package api
 
 import (
-	"fmt"
-	"github.com/gin-gonic/gin"
 	middleware "alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
+	"fmt"
+	"github.com/gin-gonic/gin"
 )
 
 type userRoleController struct{}
@@ -28,7 +28,7 @@ func (userRoleController userRoleController) API(gin *gin.RouterGroup) {
 		a.POST("roleCreate", userRoleController.Create)
 		a.POST("roleUpdate", userRoleController.Update)
 		a.POST("roleDelete", userRoleController.Delete)
-		
+
 		// 角色权限管理接口
 		a.POST("setRolePermissions", userRoleController.SetRolePermissions)
 		a.GET("getRolePermissions", userRoleController.GetRolePermissions)
@@ -128,7 +128,7 @@ func (userRoleController userRoleController) GetUserRoles(ctx *gin.Context) {
 		if tenantID == "" {
 			return nil, fmt.Errorf("租户ID不能为空")
 		}
-		
+
 		return services.UserRoleService.GetUserRolesInTenant(r.UserID, tenantID)
 	})
 }

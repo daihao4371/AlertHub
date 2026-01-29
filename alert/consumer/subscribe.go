@@ -1,14 +1,14 @@
 package consumer
 
 import (
-	"fmt"
-	"github.com/zeromicro/go-zero/core/logc"
-	"strings"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
 	"alertHub/pkg/sender"
 	"alertHub/pkg/templates"
 	"alertHub/pkg/tools"
+	"fmt"
+	"github.com/zeromicro/go-zero/core/logc"
+	"strings"
 )
 
 type toUser struct {

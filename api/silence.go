@@ -1,11 +1,11 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
 	middleware "alertHub/internal/middleware"
 	"alertHub/internal/services"
 	"alertHub/internal/types"
 	jwtUtils "alertHub/pkg/tools"
+	"github.com/gin-gonic/gin"
 )
 
 type silenceController struct{}

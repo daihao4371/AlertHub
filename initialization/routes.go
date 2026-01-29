@@ -1,11 +1,11 @@
 package initialization
 
 import (
-	"context"
 	"alertHub/internal/global"
 	"alertHub/internal/middleware"
 	"alertHub/internal/routers"
 	v1 "alertHub/internal/routers/v1"
+	"context"
 
 	"github.com/gin-gonic/gin"
 	"github.com/zeromicro/go-zero/core/logc"

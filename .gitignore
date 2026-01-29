@@ -43,3 +43,6 @@ deploy/docker-compose/redis
 # Claude Code 相关文件
 CLAUDE.md
 docs/
+
+# 独立 Skills 项目（在 GitHub 单独维护）
+my-skills/

@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"github.com/go-redis/redis"
 	"alertHub/pkg/client"
+	"github.com/go-redis/redis"
 )
 
 type (

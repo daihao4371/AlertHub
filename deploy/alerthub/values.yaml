@@ -129,6 +129,38 @@ web:
         try_files $uri $uri/ /index.html;
       }
     
+      # SSE 流式传输专用配置（AI 聊天接口）
+      location /api/w8t/ai/chat {
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS';
+        add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+
+        # SSE 关键配置：禁用所有缓冲
+        proxy_buffering off;
+        proxy_cache off;
+        chunked_transfer_encoding on;
+
+        # 使用 HTTP/1.1 支持长连接
+        proxy_http_version 1.1;
+        proxy_set_header Connection '';
+
+        # 超时设置（SSE 需要较长超时）
+        proxy_connect_timeout 300;
+        proxy_read_timeout 600;
+        proxy_send_timeout 600;
+
+        proxy_ssl_server_name on;
+        proxy_ssl_protocols TLSv1.2;
+        proxy_pass http://{{ include "alerthub.componentName" (dict "root" . "component" "service") }}:9001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_body $request_body;
+        proxy_pass_request_headers on;
+      }
+
+      # 其他 API 接口
       location /api {
         add_header Access-Control-Allow-Origin *;
         add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS';
@@ -169,6 +201,11 @@ web:
     annotations:
       nginx.ingress.kubernetes.io/rewrite-target: /
       nginx.ingress.kubernetes.io/proxy-body-size: "2050m"
+      # SSE 流式传输必需配置
+      nginx.ingress.kubernetes.io/proxy-buffering: "off"
+      nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+      nginx.ingress.kubernetes.io/proxy-connect-timeout: "300"
     hosts:
       - host: alerthub.x.com
         paths:

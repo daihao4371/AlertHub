@@ -1,10 +1,6 @@
 package eval
 
 import (
-	"fmt"
-	"sort"
-	"strings"
-	"time"
 	"alertHub/alert/process"
 	"alertHub/internal/ctx"
 	"alertHub/internal/models"
@@ -12,6 +8,10 @@ import (
 	"alertHub/pkg/community/aws/cloudwatch/types"
 	"alertHub/pkg/provider"
 	"alertHub/pkg/tools"
+	"fmt"
+	"sort"
+	"strings"
+	"time"
 
 	"github.com/zeromicro/go-zero/core/logc"
 	v1 "k8s.io/api/core/v1"
@@ -38,7 +38,7 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 	// 处理 PromQL 中的变量：如果包含 $instance 或 $ifName 等变量，替换为通配符以查询所有匹配的指标
 	// 告警规则执行时应该监控所有匹配的指标，而不是只监控特定的 instance 或 ifName
 	promQL := tools.ReplacePromQLVariablesForAlert(rule.PrometheusConfig.PromQL, nil)
-	
+
 	switch datasourceType {
 	case provider.PrometheusDsProvider:
 		resQuery, err = cli.(provider.PrometheusProvider).Query(promQL)
