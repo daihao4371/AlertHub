@@ -215,6 +215,15 @@ func buildDingdingMarkdown(alert models2.AlertCurEvent, noticeTmpl models2.Notic
 	// 对告警详情进行高亮处理
 	EventText = highlightAlertFields(EventText, alert)
 
+	// 对标题中的【告警中】和【已恢复】进行高亮处理
+	if !alert.IsRecovered {
+		// 告警中 - 红色高亮
+		Title = strings.ReplaceAll(Title, "【告警中】", `<font color="red">【告警中】</font>`)
+	} else {
+		// 已恢复 - 绿色高亮
+		Title = strings.ReplaceAll(Title, "【已恢复】", `<font color="green">【已恢复】</font>`)
+	}
+
 	// 解析值班用户，支持 @提及
 	dutyUser := alert.DutyUser
 	var dutyUsers []string
@@ -275,6 +284,9 @@ func buildDingdingActionCard(alert models2.AlertCurEvent, noticeTmpl models2.Not
 
 	// 对告警详情进行高亮处理
 	EventText = highlightAlertFields(EventText, alert)
+
+	// 对标题中的【告警中】进行高亮处理 - 红色
+	Title = strings.ReplaceAll(Title, "【告警中】", `<font color="red">【告警中】</font>`)
 
 	// 生成快捷操作 Token（24小时有效期）
 	token, err := utils.GenerateQuickToken(
