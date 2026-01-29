@@ -19,13 +19,16 @@ import (
 )
 
 // Metrics 包含 Prometheus、VictoriaMetrics 数据源
-func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) []string {
+// 返回 EvalResult，包含当前活跃告警的指纹列表和所有指标的当前值
+func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) EvalResult {
 	pools := ctx.Redis.ProviderPools()
 	var (
 		resQuery       []provider.Metrics
 		externalLabels map[string]interface{}
 		// 当前活跃告警的指纹列表
 		curFingerprints []string
+		// 所有指标的当前值（fingerprint -> value），用于恢复时更新值
+		currentValues = make(map[string]float64)
 		// 按指纹分组存储事件，相同规则只保留最高优先级的事件
 		highestPriorityEvents = make(map[string]struct{})
 	)
@@ -33,7 +36,7 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 	cli, err := pools.GetClient(datasourceId)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, err.Error())
-		return nil
+		return EvalResult{}
 	}
 
 	// 处理 PromQL 中的变量：如果包含 $instance 或 $ifName 等变量，替换为通配符以查询所有匹配的指标
@@ -45,7 +48,7 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 		resQuery, err = cli.(provider.PrometheusProvider).Query(promQL)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return nil
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.PrometheusProvider).GetExternalLabels()
@@ -53,17 +56,17 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 		resQuery, err = cli.(provider.VictoriaMetricsProvider).Query(promQL)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return nil
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.VictoriaMetricsProvider).GetExternalLabels()
 	default:
 		logc.Errorf(ctx.Ctx, fmt.Sprintf("Unsupported metrics type, type: %s", datasourceType))
-		return nil
+		return EvalResult{}
 	}
 
 	if resQuery == nil {
-		return nil
+		return EvalResult{}
 	}
 
 	// 按优先级排序规则（P0 > P1 > P2）
@@ -97,6 +100,9 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 				Metric: fingerprintLabels,
 			}
 			fingerprint := fingerprintMetric.GetFingerprint()
+
+			// 记录所有指标的当前值（无论是否触发告警），用于恢复时更新值
+			currentValues[fingerprint] = v.Value
 
 			event := process.BuildEvent(rule, func() map[string]interface{} {
 				newMetric := make(map[string]interface{})
@@ -151,7 +157,10 @@ func metrics(ctx *ctx.Context, datasourceId, datasourceType string, rule models.
 		}
 	}
 
-	return curFingerprints
+	return EvalResult{
+		Fingerprints:  curFingerprints,
+		CurrentValues: currentValues,
+	}
 }
 
 // sortRulesByPriority 按优先级排序规则
@@ -185,7 +194,7 @@ func getPriorityValue(severity string) int {
 }
 
 // Logs 包含 AliSLS、Loki、ElasticSearch 数据源
-func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) []string {
+func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) EvalResult {
 	var (
 		// 日志信息
 		log provider.Logs
@@ -203,7 +212,7 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 	cli, err := pools.GetClient(datasourceId)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, err.Error())
-		return []string{}
+		return EvalResult{}
 	}
 
 	switch datasourceType {
@@ -219,14 +228,14 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		log, count, err = cli.(provider.LokiProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.LokiProvider).GetExternalLabels()
 		operator, value, err := tools.ProcessRuleExpr(rule.LogEvalCondition)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		evalOptions = models.EvalCondition{
@@ -248,14 +257,14 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		log, count, err = cli.(provider.AliCloudSlsDsProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.AliCloudSlsDsProvider).GetExternalLabels()
 		operator, value, err := tools.ProcessRuleExpr(rule.LogEvalCondition)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		evalOptions = models.EvalCondition{
@@ -277,14 +286,14 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		log, count, err = cli.(provider.ElasticSearchDsProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.ElasticSearchDsProvider).GetExternalLabels()
 		operator, value, err := tools.ProcessRuleExpr(rule.LogEvalCondition)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		evalOptions = models.EvalCondition{
@@ -305,14 +314,14 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		log, count, err = cli.(provider.VictoriaLogsProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.VictoriaLogsProvider).GetExternalLabels()
 		operator, value, err := tools.ProcessRuleExpr(rule.LogEvalCondition)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		evalOptions = models.EvalCondition{
@@ -329,14 +338,14 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		log, count, err = cli.(provider.ClickHouseProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.ClickHouseProvider).GetExternalLabels()
 		operator, value, err := tools.ProcessRuleExpr(rule.LogEvalCondition)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		evalOptions = models.EvalCondition{
@@ -347,7 +356,7 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 	}
 
 	if count <= 0 {
-		return []string{}
+		return EvalResult{}
 	}
 
 	// 唯一指纹基于 RuleId
@@ -400,11 +409,11 @@ func logs(ctx *ctx.Context, datasourceId, datasourceType string, rule models.Ale
 		process.PushEventToFaultCenter(ctx, event())
 	}
 
-	return curFingerprints
+	return EvalResult{Fingerprints: curFingerprints}
 }
 
 // Traces 包含 Jaeger 数据源
-func traces(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) []string {
+func traces(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) EvalResult {
 	var (
 		queryRes       []provider.Traces
 		externalLabels map[string]interface{}
@@ -419,7 +428,7 @@ func traces(ctx *ctx.Context, datasourceId, datasourceType string, rule models.A
 		cli, err := pools.GetClient(datasourceId)
 		if err != nil {
 			logc.Errorf(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		queryOptions := provider.TraceQueryOptions{
@@ -431,7 +440,7 @@ func traces(ctx *ctx.Context, datasourceId, datasourceType string, rule models.A
 		queryRes, err = cli.(provider.JaegerDsProvider).Query(queryOptions)
 		if err != nil {
 			logc.Error(ctx.Ctx, err.Error())
-			return []string{}
+			return EvalResult{}
 		}
 
 		externalLabels = cli.(provider.JaegerDsProvider).GetExternalLabels()
@@ -464,16 +473,16 @@ func traces(ctx *ctx.Context, datasourceId, datasourceType string, rule models.A
 		process.PushEventToFaultCenter(ctx, &event)
 	}
 
-	return curFingerprints
+	return EvalResult{Fingerprints: curFingerprints}
 }
 
-func cloudWatch(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) []string {
+func cloudWatch(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) EvalResult {
 	var externalLabels map[string]interface{}
 	pools := ctx.Redis.ProviderPools()
 	cfg, err := pools.GetClient(datasourceId)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, err.Error())
-		return []string{}
+		return EvalResult{}
 	}
 
 	externalLabels = cfg.(provider.AwsConfig).GetExternalLabels()
@@ -496,7 +505,7 @@ func cloudWatch(ctx *ctx.Context, datasourceId, datasourceType string, rule mode
 		}
 		_, values := cloudwatch.MetricDataQuery(cli, query)
 		if len(values) == 0 {
-			return []string{}
+			return EvalResult{}
 		}
 
 		event := process.BuildEvent(rule, func() map[string]interface{} {
@@ -527,34 +536,34 @@ func cloudWatch(ctx *ctx.Context, datasourceId, datasourceType string, rule mode
 		}
 	}
 
-	return curFingerprints
+	return EvalResult{Fingerprints: curFingerprints}
 }
 
-func kubernetesEvent(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) []string {
+func kubernetesEvent(ctx *ctx.Context, datasourceId, datasourceType string, rule models.AlertRule) EvalResult {
 	var externalLabels map[string]interface{}
 	datasourceObj, err := ctx.DB.Datasource().GetInstance(datasourceId)
 	if err != nil {
 		logc.Error(ctx.Ctx, err.Error())
-		return []string{}
+		return EvalResult{}
 	}
 
 	pools := ctx.Redis.ProviderPools()
 	cli, err := pools.GetClient(datasourceId)
 	if err != nil {
 		logc.Errorf(ctx.Ctx, err.Error())
-		return []string{}
+		return EvalResult{}
 	}
 
 	k8sEvent, err := cli.(provider.KubernetesClient).GetWarningEvent(rule.KubernetesConfig.Reason, rule.KubernetesConfig.Scope)
 	if err != nil {
 		logc.Error(ctx.Ctx, err.Error())
-		return []string{}
+		return EvalResult{}
 	}
 
 	externalLabels = cli.(provider.KubernetesClient).GetExternalLabels()
 
 	if len(k8sEvent.Items) == 0 {
-		return []string{}
+		return EvalResult{}
 	}
 
 	// 分组：key = resourceName + eventReason
@@ -618,5 +627,5 @@ func kubernetesEvent(ctx *ctx.Context, datasourceId, datasourceType string, rule
 		process.PushEventToFaultCenter(ctx, &event)
 	}
 
-	return curFingerprints
+	return EvalResult{Fingerprints: curFingerprints}
 }
