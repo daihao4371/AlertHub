@@ -41,8 +41,19 @@ const (
 	TaskChannelBufferSize = 1
 )
 
+// EvalResult 评估结果，包含当前活跃告警的指纹列表和所有指标的当前值
+// 用于在恢复告警时更新指标值（如磁盘使用率）为当前实际值
+type EvalResult struct {
+	// Fingerprints 当前活跃告警的指纹列表
+	Fingerprints []string
+	// CurrentValues 所有指标的当前值（fingerprint -> value）
+	// 用于恢复时更新 Labels["value"] 为当前实际值
+	CurrentValues map[string]float64
+}
+
 // 数据源处理器映射
-var datasourceHandlers = map[string]func(*ctx.Context, string, string, models.AlertRule) []string{
+// 返回 EvalResult 包含指纹列表和当前指标值，用于恢复时更新值
+var datasourceHandlers = map[string]func(*ctx.Context, string, string, models.AlertRule) EvalResult{
 	DatasourceTypePrometheus:      metrics,
 	DatasourceTypeVictoriaMetrics: metrics,
 	DatasourceTypeAliCloudSLS:     logs,
@@ -61,7 +72,7 @@ type (
 		Submit(rule models.AlertRule)
 		Stop(ruleId string)
 		Eval(ctx context.Context, rule models.AlertRule)
-		Recover(tenantId, ruleId string, eventCacheKey models.AlertEventCacheKey, faultCenterInfoKey models.FaultCenterInfoCacheKey, curFingerprints []string)
+		Recover(tenantId, ruleId string, eventCacheKey models.AlertEventCacheKey, faultCenterInfoKey models.FaultCenterInfoCacheKey, curFingerprints []string, currentValues map[string]float64, annotationTemplate string)
 		RestartAllEvals()
 		StopAllEvals()
 	}
@@ -142,20 +153,23 @@ func (t *AlertRule) executeTask(rule models.AlertRule, taskChan chan struct{}) {
 	}
 
 	// 并发处理数据源
-	curFingerprints := t.processDatasources(rule)
+	evalResult := t.processDatasources(rule)
 
-	// 处理恢复逻辑
+	// 处理恢复逻辑，传入当前指标值和注解模板用于恢复时更新
 	t.Recover(rule.TenantId, rule.RuleId,
 		models.BuildAlertEventCacheKey(rule.TenantId, rule.FaultCenterId),
 		models.BuildFaultCenterInfoCacheKey(rule.TenantId, rule.FaultCenterId),
-		curFingerprints)
+		evalResult.Fingerprints,
+		evalResult.CurrentValues,
+		rule.PrometheusConfig.Annotations)
 }
 
 // processDatasources 处理数据源
-func (t *AlertRule) processDatasources(rule models.AlertRule) []string {
+func (t *AlertRule) processDatasources(rule models.AlertRule) EvalResult {
 	var (
 		curFingerprints []string
-		fingerprintChan = make(chan []string, len(rule.DatasourceIdList))
+		currentValues   = make(map[string]float64)
+		resultChan      = make(chan EvalResult, len(rule.DatasourceIdList))
 		wg              sync.WaitGroup
 	)
 
@@ -164,50 +178,55 @@ func (t *AlertRule) processDatasources(rule models.AlertRule) []string {
 		wg.Add(1)
 		go func(dsId string) {
 			defer wg.Done()
-			fingerprints := t.processSingleDatasource(dsId, rule)
-			if len(fingerprints) > 0 {
-				fingerprintChan <- fingerprints
-			}
+			result := t.processSingleDatasource(dsId, rule)
+			resultChan <- result
 		}(dsId)
 	}
 
 	go func() {
 		wg.Wait()
-		close(fingerprintChan)
+		close(resultChan)
 	}()
 
-	for fingerprints := range fingerprintChan {
-		curFingerprints = append(curFingerprints, fingerprints...)
+	// 聚合所有数据源的结果
+	for result := range resultChan {
+		curFingerprints = append(curFingerprints, result.Fingerprints...)
+		for fp, val := range result.CurrentValues {
+			currentValues[fp] = val
+		}
 	}
 
-	return curFingerprints
+	return EvalResult{
+		Fingerprints:  curFingerprints,
+		CurrentValues: currentValues,
+	}
 }
 
 // processSingleDatasource 处理单个数据源
-func (t *AlertRule) processSingleDatasource(dsId string, rule models.AlertRule) []string {
+func (t *AlertRule) processSingleDatasource(dsId string, rule models.AlertRule) EvalResult {
 	instance, err := t.ctx.DB.Datasource().GetInstance(dsId)
 	if err != nil {
 		logc.Errorf(t.ctx.Ctx, fmt.Sprintf("Failed to get datasource instance %s: %v", dsId, err))
-		return nil
+		return EvalResult{}
 	}
 
 	// 检查数据源健康状态
 	if ok, _ := provider.CheckDatasourceHealth(instance); !ok {
 		logc.Errorf(t.ctx.Ctx, "Datasource %s is unhealthy", dsId)
-		return nil
+		return EvalResult{}
 	}
 
 	// 检查数据源是否启用
 	if !*instance.Enabled {
 		logc.Errorf(t.ctx.Ctx, "Datasource %s is disabled", dsId)
-		return nil
+		return EvalResult{}
 	}
 
 	// 调用处理器
 	handler, exists := datasourceHandlers[rule.DatasourceType]
 	if !exists {
 		logc.Errorf(t.ctx.Ctx, "Unsupported datasource type: %s", rule.DatasourceType)
-		return nil
+		return EvalResult{}
 	}
 
 	return handler(t.ctx, dsId, instance.Type, rule)
@@ -223,7 +242,7 @@ func (t *AlertRule) getEvalTimeDuration(evalTimeType string, evalInterval int64)
 	}
 }
 
-func (t *AlertRule) Recover(tenantId, ruleId string, eventCacheKey models.AlertEventCacheKey, faultCenterInfoKey models.FaultCenterInfoCacheKey, curFingerprints []string) {
+func (t *AlertRule) Recover(tenantId, ruleId string, eventCacheKey models.AlertEventCacheKey, faultCenterInfoKey models.FaultCenterInfoCacheKey, curFingerprints []string, currentValues map[string]float64, annotationTemplate string) {
 	// 过滤空指纹
 	var filteredCurFingerprints []string
 	for _, fp := range curFingerprints {
@@ -357,6 +376,21 @@ func (t *AlertRule) Recover(tenantId, ruleId string, eventCacheKey models.AlertE
 			if newEvent.LastSendTime != 0 {
 				newEvent.LastSendTime = 0
 			}
+
+			// 更新恢复时的指标值（如磁盘使用率从100%恢复到70%时，显示当前的70%而非告警时的100%）
+			if currentValue, exists := currentValues[fingerprint]; exists {
+				// 更新 Labels 中的 value 为当前实际值
+				if newEvent.Labels != nil {
+					newEvent.Labels["value"] = int(currentValue + 0.5) // 四舍五入取整
+				}
+				// 重新生成 Annotations，使用更新后的值
+				if annotationTemplate != "" {
+					newEvent.Annotations = tools.ParserVariables(annotationTemplate, tools.ConvertStructToMap(newEvent))
+				}
+				logc.Infof(t.ctx.Ctx, "[告警恢复] 更新指标值: fingerprint=%s, 恢复时值=%.2f",
+					fingerprint, currentValue)
+			}
+
 			// 记录恢复事件推送日志
 			logc.Infof(t.ctx.Ctx, "[普通告警恢复] 推送恢复事件: ruleId=%s, fingerprint=%s, ruleName=%s",
 				newEvent.RuleId, newEvent.Fingerprint, newEvent.RuleName)
