@@ -2,6 +2,7 @@ package repo
 
 import (
 	"alertHub/internal/models"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -235,15 +236,19 @@ func (c consulRepo) BatchUpdateTargets(targets []models.ConsulTarget) error {
 		}
 
 		// 更新 Labels 字段（即使为空也要更新，用于清空之前的数据）
-		// 注意：如果 target.Labels 为 nil，GORM 不会更新该字段，所以需要显式设置为空 map
-		if target.Labels != nil {
-			updateFields["labels"] = target.Labels
-		} else {
-			// 如果为 nil，设置为空 map 以清空之前的数据
-			updateFields["labels"] = map[string]interface{}{}
+		// 使用 Updates(map) 时 GORM 不会自动应用 serializer:json，需要手动序列化为 JSON 字符串
+		labelsToUpdate := target.Labels
+		if labelsToUpdate == nil {
+			labelsToUpdate = map[string]interface{}{}
 		}
+		labelsJSON, err := json.Marshal(labelsToUpdate)
+		if err != nil {
+			tx.Rollback()
+			return fmt.Errorf("序列化 Labels 失败 (serviceId=%s): %w", target.ServiceID, err)
+		}
+		updateFields["labels"] = string(labelsJSON)
 
-		err := tx.Model(&models.ConsulTarget{}).
+		err = tx.Model(&models.ConsulTarget{}).
 			Where("service_id = ? AND tenant_id = ?", target.ServiceID, target.TenantId).
 			Updates(updateFields).Error
 		if err != nil {
