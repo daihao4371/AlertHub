@@ -268,6 +268,7 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/process-trace/status", "PUT", "更新处理状态（支持分配处理人和步骤添加）", "处理流程追踪"},
 		{"/api/w8t/process-trace/ai-analysis", "PUT", "更新AI分析结果", "处理流程追踪"},
 		{"/api/w8t/process-trace/operation-logs", "GET", "获取操作日志列表", "处理流程追踪"},
+		{"/api/w8t/process-trace/statistics", "GET", "获取处理统计数据", "处理流程追踪"},
 	}
 }
 
