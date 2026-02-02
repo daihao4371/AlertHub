@@ -2,7 +2,9 @@ package services
 
 import (
 	"fmt"
+	"regexp"
 	"time"
+
 	"alertHub/internal/ctx"
 	models "alertHub/internal/models"
 	"alertHub/internal/types"
@@ -28,9 +30,31 @@ func newInterSilenceService(ctx *ctx.Context) InterSilenceService {
 	}
 }
 
+// validateSilenceLabels 验证静默规则中所有标签的正则表达式是否合法
+func validateSilenceLabels(labels []models.SilenceLabel) error {
+	for _, label := range labels {
+		if _, err := regexp.Compile(label.Value); err != nil {
+			return fmt.Errorf("标签 '%s' 的正则表达式无效: %s, 错误: %v", label.Key, label.Value, err)
+		}
+	}
+	return nil
+}
+
 func (ass alertSilenceService) Create(req interface{}) (interface{}, interface{}) {
 	r := req.(*types.RequestSilenceCreate)
 	updateAt := time.Now().Unix()
+
+	// 验证正则表达式的有效性，防止无效正则导致运行时 panic
+	if err := validateSilenceLabels(r.Labels); err != nil {
+		return nil, err
+	}
+
+	// 根据开始时间判断状态：如果开始时间在未来，则设为未生效(0)，否则为生效中(1)
+	status := 1
+	if r.StartsAt > updateAt {
+		status = 0
+	}
+
 	silence := models.AlertSilences{
 		TenantId:      r.TenantId,
 		Name:          r.Name,
@@ -42,11 +66,7 @@ func (ass alertSilenceService) Create(req interface{}) (interface{}, interface{}
 		FaultCenterId: r.FaultCenterId,
 		Labels:        r.Labels,
 		Comment:       r.Comment,
-		Status:        1,
-	}
-
-	if r.StartsAt > updateAt {
-		r.Status = 0
+		Status:        status,
 	}
 
 	ass.ctx.Redis.Silence().PushAlertMute(silence)
@@ -110,24 +130,31 @@ func (ass alertSilenceService) Create(req interface{}) (interface{}, interface{}
 
 func (ass alertSilenceService) Update(req interface{}) (interface{}, interface{}) {
 	r := req.(*types.RequestSilenceUpdate)
+	updateAt := time.Now().Unix()
+
+	// 验证正则表达式的有效性，防止无效正则导致运行时 panic
+	if err := validateSilenceLabels(r.Labels); err != nil {
+		return nil, err
+	}
+
+	// 根据开始时间判断状态：如果开始时间在未来，则设为未生效(0)，否则为生效中(1)
+	status := 1
+	if r.StartsAt > updateAt {
+		status = 0
+	}
+
 	silence := models.AlertSilences{
 		TenantId:      r.TenantId,
 		Name:          r.Name,
 		ID:            r.ID,
 		StartsAt:      r.StartsAt,
 		EndsAt:        r.EndsAt,
-		UpdateAt:      time.Now().Unix(),
+		UpdateAt:      updateAt,
 		UpdateBy:      r.UpdateBy,
 		FaultCenterId: r.FaultCenterId,
 		Labels:        r.Labels,
 		Comment:       r.Comment,
-		Status:        1,
-	}
-
-	if r.StartsAt > r.UpdateAt {
-		r.Status = 0
-	} else {
-		r.Status = 1
+		Status:        status,
 	}
 
 	ass.ctx.Redis.Silence().PushAlertMute(silence)
