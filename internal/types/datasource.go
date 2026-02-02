@@ -60,6 +60,11 @@ type RequestQueryMetricsValue struct {
 	EndTime       int64             `form:"endTime"`   // Unix 时间戳（秒），可选
 	Step          int64             `form:"step"`      // 步长（秒），可选
 	Variables     map[string]string `form:"variables"` // 查询变量，用于替换查询语句中的 $variable 格式
+
+	// 性能优化参数
+	Limit     int    `form:"limit"`     // 限制返回的时间序列数量，0 表示不限制
+	Offset    int    `form:"offset"`    // 分页偏移量，用于分批获取数据
+	Instances string `form:"instances"` // 指定要查询的主机列表，逗号分隔，用于过滤特定主机的数据
 }
 
 func (r RequestQueryMetricsValue) Validate() error {
@@ -91,6 +96,37 @@ func (r RequestQueryMetricsValue) GetStep() time.Duration {
 		return 10 * time.Second
 	}
 	return time.Duration(r.Step) * time.Second
+}
+
+// GetInstanceList 获取指定的主机实例列表
+// 将逗号分隔的字符串解析为字符串切片，过滤空值
+func (r RequestQueryMetricsValue) GetInstanceList() []string {
+	if r.Instances == "" {
+		return nil
+	}
+	instances := strings.Split(r.Instances, ",")
+	result := make([]string, 0, len(instances))
+	for _, inst := range instances {
+		trimmed := strings.TrimSpace(inst)
+		if trimmed != "" {
+			result = append(result, trimmed)
+		}
+	}
+	return result
+}
+
+// HasPagination 检查是否启用了分页功能
+func (r RequestQueryMetricsValue) HasPagination() bool {
+	return r.Limit > 0 || r.Offset > 0
+}
+
+// PromQueryPaginatedResponse Prometheus 查询的分页响应结构
+// 包含数据和分页元信息，便于前端进行分页展示
+type PromQueryPaginatedResponse struct {
+	Data   interface{} `json:"data"`   // 查询返回的数据
+	Total  int         `json:"total"`  // 时间序列总数（分页前）
+	Limit  int         `json:"limit"`  // 当前请求的 limit 值
+	Offset int         `json:"offset"` // 当前请求的 offset 值
 }
 
 type RequestSearchLogsContent struct {

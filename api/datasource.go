@@ -161,6 +161,86 @@ func replaceQueryVariables(query string, variables map[string]string) string {
 	return tools.ReplacePromQLVariables(query, variables, false)
 }
 
+// injectInstanceFilter 向 PromQL 查询中注入 instance 标签过滤条件
+// 用于限制查询只返回指定主机的数据，减少返回数据量
+// 参数:
+//   - query: 原始 PromQL 查询语句
+//   - instances: 要过滤的主机列表
+//
+// 返回: 注入过滤条件后的查询语句
+func injectInstanceFilter(query string, instances []string) string {
+	if len(instances) == 0 {
+		return query
+	}
+
+	// 构建 instance 正则匹配表达式: instance=~"host1|host2|host3"
+	instanceRegex := strings.Join(instances, "|")
+	instanceFilter := fmt.Sprintf(`instance=~"%s"`, instanceRegex)
+
+	// 检查查询是否已包含大括号（标签选择器）
+	// 情况1: metric_name{existing_labels} -> metric_name{existing_labels, instance=~"..."}
+	// 情况2: metric_name -> metric_name{instance=~"..."}
+	if strings.Contains(query, "{") {
+		// 已有标签选择器，在最后一个 } 前插入新的过滤条件
+		lastBraceIdx := strings.LastIndex(query, "}")
+		if lastBraceIdx > 0 {
+			// 检查大括号内是否已有内容
+			firstBraceIdx := strings.LastIndex(query[:lastBraceIdx], "{")
+			if firstBraceIdx >= 0 {
+				insideBraces := strings.TrimSpace(query[firstBraceIdx+1 : lastBraceIdx])
+				if insideBraces == "" {
+					// 空大括号: metric{} -> metric{instance=~"..."}
+					return query[:firstBraceIdx+1] + instanceFilter + query[lastBraceIdx:]
+				}
+				// 非空大括号: metric{label="value"} -> metric{label="value", instance=~"..."}
+				return query[:lastBraceIdx] + ", " + instanceFilter + query[lastBraceIdx:]
+			}
+		}
+	}
+
+	// 没有标签选择器，需要找到指标名称的结束位置并添加
+	// 处理可能的函数调用: rate(metric[5m]) -> rate(metric{instance=~"..."}[5m])
+	// 简单情况: metric_name -> metric_name{instance=~"..."}
+	metricEndPattern := regexp.MustCompile(`^([a-zA-Z_:][a-zA-Z0-9_:]*)`)
+	if match := metricEndPattern.FindStringIndex(query); match != nil {
+		metricEnd := match[1]
+		return query[:metricEnd] + "{" + instanceFilter + "}" + query[metricEnd:]
+	}
+
+	// 如果无法识别格式，返回原查询
+	return query
+}
+
+// applyPagination 对查询结果应用分页
+// 在服务端对时间序列进行截取，减少返回给前端的数据量
+// 参数:
+//   - results: Prometheus 返回的时间序列列表
+//   - limit: 最大返回数量，0 表示不限制
+//   - offset: 跳过的数量
+//
+// 返回: (分页后的结果, 原始总数)
+func applyPagination(results []provider.VMResult, limit, offset int) ([]provider.VMResult, int) {
+	total := len(results)
+
+	// 如果没有设置分页参数，返回全部结果
+	if limit <= 0 && offset <= 0 {
+		return results, total
+	}
+
+	// 应用 offset
+	if offset >= total {
+		return []provider.VMResult{}, total
+	}
+	results = results[offset:]
+
+	// 应用 limit
+	if limit > 0 && limit < len(results) {
+		results = results[:limit]
+	}
+
+	return results, total
+}
+
 /*
 数据源 API
 /api/w8t/datasource
@@ -291,6 +371,12 @@ func (datasourceController datasourceController) PromQuery(ctx *gin.Context) {
 		// 替换查询语句中的变量
 		query := replaceQueryVariables(r.Query, variables)
 
+		// 性能优化：如果指定了 instances 参数，注入到查询中
+		instanceList := r.GetInstanceList()
+		if len(instanceList) > 0 {
+			query = injectInstanceFilter(query, instanceList)
+		}
+
 		var ress []provider.QueryResponse
 		path := "/api/v1/query"
 		params := url.Values{}
@@ -329,7 +415,38 @@ func (datasourceController datasourceController) PromQuery(ctx *gin.Context) {
 				return nil, fmt.Errorf("%s, URL: %s", errorMsg, fullURL)
 			}
 
-			ress = append(ress, res)
+			// 性能优化：应用服务端分页
+			if r.HasPagination() {
+				paginatedResults, total := applyPagination(res.VMData.VMResult, r.Limit, r.Offset)
+				res.VMData.VMResult = paginatedResults
+				// 将分页信息附加到响应中
+				ress = append(ress, res)
+				// 如果启用了分页，返回带分页元数据的响应
+				if len(ids) == 1 {
+					return types.PromQueryPaginatedResponse{
+						Data:   ress,
+						Total:  total,
+						Limit:  r.Limit,
+						Offset: r.Offset,
+					}, nil
+				}
+			} else {
+				ress = append(ress, res)
+			}
+		}
+
+		// 如果启用了分页且有多个数据源，合并计算总数
+		if r.HasPagination() && len(ids) > 1 {
+			totalCount := 0
+			for _, res := range ress {
+				totalCount += len(res.VMData.VMResult)
+			}
+			return types.PromQueryPaginatedResponse{
+				Data:   ress,
+				Total:  totalCount,
+				Limit:  r.Limit,
+				Offset: r.Offset,
+			}, nil
 		}
 
 		return ress, nil
@@ -360,6 +477,12 @@ func (datasourceController datasourceController) PromQueryRange(ctx *gin.Context
 
 		// 替换查询语句中的变量
 		query := replaceQueryVariables(r.Query, variables)
+
+		// 性能优化：如果指定了 instances 参数，注入到查询中
+		instanceList := r.GetInstanceList()
+		if len(instanceList) > 0 {
+			query = injectInstanceFilter(query, instanceList)
+		}
 
 		var ress []provider.QueryResponse
 		path := "/api/v1/query_range"
@@ -402,7 +525,37 @@ func (datasourceController datasourceController) PromQueryRange(ctx *gin.Context
 				return nil, fmt.Errorf("%s, URL: %s", errorMsg, fullURL)
 			}
 
-			ress = append(ress, res)
+			// 性能优化：应用服务端分页
+			if r.HasPagination() {
+				paginatedResults, total := applyPagination(res.VMData.VMResult, r.Limit, r.Offset)
+				res.VMData.VMResult = paginatedResults
+				ress = append(ress, res)
+				// 如果启用了分页且只有单个数据源，返回带分页元数据的响应
+				if len(ids) == 1 {
+					return types.PromQueryPaginatedResponse{
+						Data:   ress,
+						Total:  total,
+						Limit:  r.Limit,
+						Offset: r.Offset,
+					}, nil
+				}
+			} else {
+				ress = append(ress, res)
+			}
+		}
+
+		// 如果启用了分页且有多个数据源，合并计算总数
+		if r.HasPagination() && len(ids) > 1 {
+			totalCount := 0
+			for _, res := range ress {
+				totalCount += len(res.VMData.VMResult)
+			}
+			return types.PromQueryPaginatedResponse{
+				Data:   ress,
+				Total:  totalCount,
+				Limit:  r.Limit,
+				Offset: r.Offset,
+			}, nil
 		}
 
 		return ress, nil
