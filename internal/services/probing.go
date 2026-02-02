@@ -178,9 +178,18 @@ func (m probingService) Delete(req interface{}) (interface{}, interface{}) {
 		})
 	}
 
+	// 清理拨测事件缓存和值缓存
 	err = m.ctx.Redis.Redis().Del(string(models.BuildProbingEventCacheKey(res.TenantId, res.RuleId)), string(models.BuildProbingValueCacheKey(res.TenantId, res.RuleId))).Err()
 	if err != nil {
 		return nil, err
+	}
+
+	// 清理故障中心的告警缓存，避免删除拨测任务后告警成为脏数据
+	if res.FaultCenterId != "" {
+		fingerprints := m.ctx.Redis.Alert().GetFingerprintsByRuleId(res.TenantId, res.FaultCenterId, res.RuleId)
+		for _, fingerprint := range fingerprints {
+			m.ctx.Redis.Alert().RemoveAlertEvent(res.TenantId, res.FaultCenterId, fingerprint)
+		}
 	}
 
 	return nil, nil
