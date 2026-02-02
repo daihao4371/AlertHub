@@ -120,12 +120,19 @@ func evalCondition(metrics map[string]interface{}, fingerprint string, muteLabel
 			return false
 		}
 
+		// 编译正则表达式，如果编译失败则跳过该规则（防止 panic）
+		re, err := regexp.Compile(muteLabel.Value)
+		if err != nil {
+			logc.Errorf(ctx.Ctx, "静默规则正则表达式编译失败, key: %s, value: %s, err: %v", muteLabel.Key, muteLabel.Value, err)
+			return false
+		}
+
 		var matched bool
 		switch muteLabel.Operator {
 		case "==", "=":
-			matched = regexp.MustCompile(muteLabel.Value).MatchString(val)
+			matched = re.MatchString(val)
 		case "!=":
-			matched = !regexp.MustCompile(muteLabel.Value).MatchString(val)
+			matched = !re.MatchString(val)
 		default:
 			matched = false
 		}
