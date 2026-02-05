@@ -5,12 +5,12 @@
 
 # 配置信息
 REDIS_HOST="10.10.217.225"
-REDIS_PORT="6379"
+REDIS_PORT="6380"
 REDIS_PASSWORD=""
 
 # 要删除的告警信息
-FINGERPRINT="11325167300741362178"
-RULE_NAME="飞书测试服务器CPU使用率监控"
+FINGERPRINT="9cb2ca9441c7c19ec4e7a734be36067f"
+RULE_NAME="域名过期"
 
 echo "=== AlertHub 告警清理脚本 ==="
 echo "指纹: $FINGERPRINT"

@@ -9,12 +9,12 @@ import (
 	"alertHub/internal/models"
 	"alertHub/internal/repo"
 	"alertHub/internal/services"
-	"alertHub/pkg/ai"
 	"alertHub/pkg/exporter"
 	"alertHub/pkg/templates"
 	"alertHub/pkg/tools"
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 
 	"github.com/zeromicro/go-zero/core/logc"
@@ -79,21 +79,13 @@ func InitBasic() {
 	}
 
 	if r.AiConfig.GetEnable() {
-		// Convert models.AiConfig to
-		// ai.AiConfig for use with NewAiClient
-		aiConfig := &ai.AiConfig{
-			Url:       r.AiConfig.Url,
-			ApiKey:    r.AiConfig.AppKey,
-			Model:     r.AiConfig.Model,
-			Timeout:   r.AiConfig.Timeout,
-			MaxTokens: r.AiConfig.MaxTokens,
-		}
-		client, err := ai.NewAiClient(aiConfig)
-		if err != nil {
-			logc.Error(ctx.Ctx, fmt.Sprintf("创建 Ai 客户端失败: %s", err.Error()))
+		// AI 功能已启用，验证是否有配置
+		providers := r.AiConfig.GetAllProviders()
+		if len(providers) == 0 {
+			logc.Error(ctx.Ctx, "AI 已启用但未找到任何 Provider 配置")
 			return
 		}
-		ctx.Redis.ProviderPools().SetClient("AiClient", client)
+		logc.Info(ctx.Ctx, fmt.Sprintf("AI 功能已启用，配置的 Provider: %s", strings.Join(providers, ", ")))
 	}
 }
 
