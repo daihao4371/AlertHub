@@ -1,8 +1,9 @@
 package repo
 
 import (
-	"gorm.io/gorm"
 	"alertHub/internal/models"
+
+	"gorm.io/gorm"
 )
 
 type (

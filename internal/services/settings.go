@@ -4,9 +4,9 @@ import (
 	"alertHub/internal/ctx"
 	"alertHub/internal/global"
 	"alertHub/internal/models"
-	"alertHub/pkg/ai"
 	"alertHub/pkg/templates"
 	"context"
+	"fmt"
 )
 
 type (
@@ -63,19 +63,11 @@ func (a settingService) Save(req interface{}) (interface{}, interface{}) {
 	}
 
 	if r.AiConfig.GetEnable() {
-		// Convert models.AiConfig to ai.AiConfig for use with NewAiClient
-		aiConfig := &ai.AiConfig{
-			Url:       r.AiConfig.Url,
-			ApiKey:    r.AiConfig.AppKey,
-			Model:     r.AiConfig.Model,
-			Timeout:   r.AiConfig.Timeout,
-			MaxTokens: r.AiConfig.MaxTokens,
+		// AI 功能已启用，验证是否有配置
+		providers := r.AiConfig.GetAllProviders()
+		if len(providers) == 0 {
+			return nil, fmt.Errorf("AI 已启用但未配置任何 Provider")
 		}
-		client, err := ai.NewAiClient(aiConfig)
-		if err != nil {
-			return nil, err
-		}
-		a.ctx.Redis.ProviderPools().SetClient("AiClient", client)
 	}
 
 	// 重新加载快捷操作配置到内存缓存（保存后立即生效）
