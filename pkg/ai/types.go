@@ -16,6 +16,7 @@ type (
 	}
 
 	AiConfig struct {
+		Provider  string // dify | openai，默认 dify
 		Url       string
 		ApiKey    string
 		Model     string

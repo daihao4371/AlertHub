@@ -11,34 +11,50 @@ import (
 	"time"
 )
 
-// isDifyAPI 检查是否为 Dify API（通过 URL 判断）
-func (o *AiConfig) isDifyAPI() bool {
-	return strings.Contains(o.Url, "/v1/chat-messages")
-}
-
-// NewAiClient 创建AI客户端工厂方法
+// NewAiClient 创建 AI 客户端工厂方法
+// 根据 config.Provider 返回对应的实现（dify 或 openai）
 func NewAiClient(config *AiConfig) (AiClient, error) {
-	err := config.Check(context.Background())
-	if err != nil {
-		return nil, err
+	// 参数校验
+	if config.Provider == "" {
+		config.Provider = "dify" // 默认 Dify（向后兼容）
 	}
 
-	return config, nil
+	// 根据 Provider 返回对应客户端
+	switch config.Provider {
+	case "dify":
+		client := &difyClient{config: config}
+		if err := client.Check(context.Background()); err != nil {
+			return nil, err
+		}
+		return client, nil
+
+	case "openai":
+		client := &openaiClient{config: config}
+		if err := client.Check(context.Background()); err != nil {
+			return nil, err
+		}
+		return client, nil
+
+	default:
+		return nil, fmt.Errorf("不支持的 AI Provider: %s", config.Provider)
+	}
 }
 
-// ChatCompletion 调用Dify底层API获取完整分析结果
-func (o *AiConfig) ChatCompletion(ctx context.Context, prompt string) (string, error) {
-	if !o.isDifyAPI() {
-		return "", fmt.Errorf("当前仅支持 Dify API")
-	}
+// ============ Dify 客户端实现 ============
 
+type difyClient struct {
+	config *AiConfig
+}
+
+// ChatCompletion 调用 Dify 底层 API 获取完整分析结果
+func (c *difyClient) ChatCompletion(ctx context.Context, prompt string) (string, error) {
 	requestBody := map[string]interface{}{
-		"inputs":         make(map[string]interface{}),
-		"query":          prompt,
-		"response_mode":  "streaming",
-		"conversation_id": "",
-		"user":           "alertHub-system",
-		"files":          []interface{}{},
+		"inputs":           make(map[string]interface{}),
+		"query":            prompt,
+		"response_mode":    "streaming",
+		"conversation_id":  "",
+		"user":             "alertHub-system",
+		"files":            []interface{}{},
 	}
 
 	body, err := json.Marshal(requestBody)
@@ -46,17 +62,17 @@ func (o *AiConfig) ChatCompletion(ctx context.Context, prompt string) (string, e
 		return "", fmt.Errorf("序列化请求体失败: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, "POST", o.Url, bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, "POST", c.config.Url, bytes.NewReader(body))
 	if err != nil {
 		return "", fmt.Errorf("创建请求失败: %w", err)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.ApiKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.ApiKey))
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{}
-	if o.Timeout > 0 {
-		client.Timeout = time.Duration(o.Timeout*3) * time.Second
+	if c.config.Timeout > 0 {
+		client.Timeout = time.Duration(c.config.Timeout*3) * time.Second
 	}
 
 	resp, err := client.Do(req)
@@ -116,42 +132,40 @@ func (o *AiConfig) ChatCompletion(ctx context.Context, prompt string) (string, e
 	return fullAnswer, nil
 }
 
-// StreamCompletion 返回Dify流式分析结果通道
-func (o *AiConfig) StreamCompletion(ctx context.Context, prompt string) (<-chan string, error) {
-	if !o.isDifyAPI() {
-		return nil, fmt.Errorf("当前仅支持 Dify API")
-	}
-
-	requestBody := map[string]interface{}{
-		"inputs":         make(map[string]interface{}),
-		"query":          prompt,
-		"response_mode":  "streaming",
-		"conversation_id": "",
-		"user":           "alertHub-system",
-		"files":          []interface{}{},
-	}
-
-	body, err := json.Marshal(requestBody)
-	if err != nil {
-		return nil, fmt.Errorf("序列化请求体失败: %w", err)
-	}
-
-	req, err := http.NewRequestWithContext(ctx, "POST", o.Url, bytes.NewReader(body))
-	if err != nil {
-		return nil, fmt.Errorf("创建请求失败: %w", err)
-	}
-
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", o.ApiKey))
-	req.Header.Set("Content-Type", "application/json")
-
+// StreamCompletion 返回 Dify 流式分析结果通道
+func (c *difyClient) StreamCompletion(ctx context.Context, prompt string) (<-chan string, error) {
 	resultChan := make(chan string, 10)
 
 	go func() {
 		defer close(resultChan)
 
+		// 构建请求体
+		// 注意：请求体必须在 goroutine 内部构建，避免 Body 被多次读取
+		requestBody := map[string]interface{}{
+			"inputs":           make(map[string]interface{}),
+			"query":            prompt,
+			"response_mode":    "streaming",
+			"conversation_id":  "",
+			"user":             "alertHub-system",
+			"files":            []interface{}{},
+		}
+
+		body, err := json.Marshal(requestBody)
+		if err != nil {
+			return
+		}
+
+		req, err := http.NewRequestWithContext(ctx, "POST", c.config.Url, bytes.NewReader(body))
+		if err != nil {
+			return
+		}
+
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.ApiKey))
+		req.Header.Set("Content-Type", "application/json")
+
 		client := &http.Client{}
-		if o.Timeout > 0 {
-			client.Timeout = time.Duration(o.Timeout*3) * time.Second
+		if c.config.Timeout > 0 {
+			client.Timeout = time.Duration(c.config.Timeout*3) * time.Second
 		}
 
 		resp, err := client.Do(req)
@@ -197,26 +211,15 @@ func (o *AiConfig) StreamCompletion(ctx context.Context, prompt string) (<-chan 
 	return resultChan, nil
 }
 
-// Check 验证 AI 配置是否有效
-func (o *AiConfig) Check(ctx context.Context) error {
-	if o.Url == "" || o.ApiKey == "" {
+// Check 验证 Dify 配置是否有效
+func (c *difyClient) Check(ctx context.Context) error {
+	if c.config.Url == "" || c.config.ApiKey == "" {
 		return fmt.Errorf("Dify API 配置错误：URL 和 ApiKey 不能为空")
 	}
 
-	if o.Timeout == 0 {
-		o.Timeout = 30 // 默认 30 秒超时
+	if c.config.Timeout == 0 {
+		c.config.Timeout = 30 // 默认 30 秒超时
 	}
 
 	return nil
-}
-
-// extractHost 从 Dify URL 中提取主机地址
-// 例如: http://10.252.10.12/v1/chat-messages -> http://10.252.10.12
-func (o *AiConfig) extractHost() string {
-	// 查找 /v1 的位置
-	parts := strings.Split(o.Url, "/v1")
-	if len(parts) > 0 {
-		return strings.TrimSuffix(parts[0], "/")
-	}
-	return ""
 }

@@ -27,9 +27,10 @@ func newInterAiService(ctx *ctx.Context) InterAiService {
 
 // buildPrompt 构建最终的提示词，支持动态字段替换
 // 参数说明：
-//   template: Prompt 模板字符串
-//   r: 请求参数（包含标准字段如 RuleName, Content 等）
-//   返回值: 替换后的完整 Prompt
+//
+//	template: Prompt 模板字符串
+//	r: 请求参数（包含标准字段如 RuleName, Content 等）
+//	返回值: 替换后的完整 Prompt
 func buildPrompt(template string, r *types.RequestAiChatContent) string {
 	prompt := template
 
@@ -75,12 +76,34 @@ func (a aiService) StreamChat(req interface{}) (<-chan string, interface{}) {
 		return nil, err
 	}
 
-	client, err := a.ctx.Redis.ProviderPools().GetClient("AiClient")
-	if err != nil {
-		return nil, err
+	// 必须指定模型
+	if r.Model == "" {
+		return nil, fmt.Errorf("请指定要使用的模型")
 	}
 
-	aiClient := client.(ai.AiClient)
+	// 根据模型名称找到对应的 Provider
+	_, providerConfig := setting.AiConfig.GetProviderByModel(r.Model)
+	if providerConfig == nil {
+		return nil, fmt.Errorf("未找到模型 %s 对应的 Provider 配置", r.Model)
+	}
+
+	// Type 字段由 GetProviderByModel 自动填充（如果为空则使用 providerName）
+	// 因此这里直接使用即可
+
+	// 创建 AI 客户端
+	aiConfig := &ai.AiConfig{
+		Provider:  providerConfig.Type,
+		Url:       providerConfig.Url,
+		ApiKey:    providerConfig.AppKey,
+		Model:     r.Model,
+		Timeout:   setting.AiConfig.Timeout,
+		MaxTokens: setting.AiConfig.MaxTokens,
+	}
+
+	aiClient, err := ai.NewAiClient(aiConfig)
+	if err != nil {
+		return nil, fmt.Errorf("创建 AI 客户端失败: %w", err)
+	}
 
 	// 构建最终的提示词：优先使用用户提供的自定义 Prompt，否则使用配置中的 Prompt
 	var prompt string

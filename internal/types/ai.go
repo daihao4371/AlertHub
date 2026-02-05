@@ -21,6 +21,10 @@ type RequestAiChatContent struct {
 	Extra map[string]interface{} `json:"extra" form:"extra"`
 	// 新增：运行时 Prompt 覆盖，支持完全自定义 Prompt（用于通用机器人场景）
 	Prompt string `json:"prompt" form:"prompt"`
+	// 新增：运行时指定 Provider，支持动态 Provider 切换（如 openai-gpt4, dify-production）
+	Provider string `json:"provider" form:"provider"`
+	// 新增：运行时指定模型，支持动态模型切换（如 gpt-4, gpt-3.5-turbo）
+	Model string `json:"model" form:"model"`
 }
 
 func (a *RequestAiChatContent) ValidateParams() error {
