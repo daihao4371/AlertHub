@@ -14,8 +14,7 @@ WORKDIR /root
 COPY go.mod go.sum ./
 
 # 禁用 HTTP/2 并下载依赖（解决连接问题）
-RUN go env -w GODEBUG=http2client=0 && \
-    go mod download -x
+RUN GODEBUG=http2client=0 go mod download
 
 # 再复制源代码（源码改动不会触发重新下载依赖）
 COPY . .
