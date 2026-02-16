@@ -223,3 +223,101 @@ func (c *difyClient) Check(ctx context.Context) error {
 
 	return nil
 }
+
+// ChatCompletionWithSchema 返回 Dify 的结构化 JSON 输出
+// Dify 不支持 response_format 参数，因此将 JSON Schema 序列化后嵌入到 prompt 中
+// 引导模型按照指定格式输出
+func (c *difyClient) ChatCompletionWithSchema(ctx context.Context, prompt string, schema map[string]interface{}) (string, error) {
+	// 将 schema 序列化并嵌入到 prompt 末尾，引导 Dify 按格式输出
+	enhancedPrompt := prompt
+	if schema != nil {
+		schemaJSON, err := json.MarshalIndent(schema, "", "  ")
+		if err == nil {
+			enhancedPrompt = prompt + "\n\n【JSON Schema 约束】\n请严格按照以下 JSON Schema 格式输出，不要添加额外字段：\n" + string(schemaJSON)
+		}
+	}
+
+	// 构建请求体
+	requestBody := map[string]interface{}{
+		"inputs":           make(map[string]interface{}),
+		"query":            enhancedPrompt,
+		"response_mode":    "streaming",
+		"conversation_id":  "",
+		"user":             "alertHub-system",
+		"files":            []interface{}{},
+	}
+
+	body, err := json.Marshal(requestBody)
+	if err != nil {
+		return "", fmt.Errorf("序列化请求体失败: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, "POST", c.config.Url, bytes.NewReader(body))
+	if err != nil {
+		return "", fmt.Errorf("创建请求失败: %w", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.config.ApiKey))
+	req.Header.Set("Content-Type", "application/json")
+
+	httpClient := &http.Client{}
+	if c.config.Timeout > 0 {
+		httpClient.Timeout = time.Duration(c.config.Timeout*3) * time.Second
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("Dify API 调用失败: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("Dify API 返回状态码 %d", resp.StatusCode)
+	}
+
+	var fullAnswer string
+	scanner := bufio.NewScanner(resp.Body)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if !strings.HasPrefix(line, "data: ") {
+			continue
+		}
+
+		jsonData := strings.TrimPrefix(line, "data: ")
+
+		var streamEvent struct {
+			Event  string `json:"event"`
+			Answer string `json:"answer"`
+			Data   struct {
+				Answer string `json:"answer"`
+			} `json:"data"`
+		}
+
+		if err := json.Unmarshal([]byte(jsonData), &streamEvent); err != nil {
+			continue
+		}
+
+		// 优先使用 message_end 事件的完整答案（结构化 JSON）
+		if streamEvent.Event == "message_end" && streamEvent.Data.Answer != "" {
+			return streamEvent.Data.Answer, nil
+		}
+
+		// workflow_finished 事件的输出答案
+		if streamEvent.Event == "workflow_finished" && streamEvent.Data.Answer != "" {
+			return streamEvent.Data.Answer, nil
+		}
+
+		// 累积 message 事件的片段
+		if streamEvent.Event == "message" && streamEvent.Answer != "" {
+			fullAnswer += streamEvent.Answer
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return "", fmt.Errorf("读取响应错误: %w", err)
+	}
+
+	return fullAnswer, nil
+}

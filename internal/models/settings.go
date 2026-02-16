@@ -163,6 +163,14 @@ func (a *AiConfig) DeleteProviderConfig(providerName string) bool {
 	return false
 }
 
+// GetFirstModel 获取 ProviderConfig 的第一个模型
+func (p *ProviderConfig) GetFirstModel() string {
+	if p == nil || len(p.Models) == 0 {
+		return ""
+	}
+	return p.Models[0]
+}
+
 func (q QuickActionConfig) GetEnable() bool {
 	if q.Enabled == nil {
 		return false

@@ -86,6 +86,9 @@ func InitBasic() {
 			return
 		}
 		logc.Info(ctx.Ctx, fmt.Sprintf("AI 功能已启用，配置的 Provider: %s", strings.Join(providers, ", ")))
+
+		// 初始化 RCA 服务（使用模型配置）
+		services.InitRCAServiceWithModelConfig(ctx, &r.AiConfig)
 	}
 }
 
