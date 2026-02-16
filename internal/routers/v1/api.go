@@ -51,6 +51,7 @@ func Router(engine *gin.Engine) {
 			api.MetricsExplorerController.API(w8t)
 			api.CasbinPermissionController.API(w8t)
 			api.ProcessTraceController.API(w8t)
+			api.RCAController.API(w8t)              // RCA 根因分析 API
 			api.ThirdPartyWebhookController.API(w8t) // 第三方Webhook管理API
 			api.ThirdPartyAlertController.API(w8t)   // 第三方告警查询API
 			api.ConsulController.API(w8t)            // Consul服务发现管理API

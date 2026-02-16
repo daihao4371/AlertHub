@@ -40,6 +40,7 @@ type (
 		ThirdPartyWebhook() InterThirdPartyWebhookRepo
 		ThirdPartyAlert() InterThirdPartyAlertRepo
 		Consul() InterConsulRepo
+		RCA() InterRCARepo
 	}
 )
 
@@ -95,4 +96,7 @@ func (e *entryRepo) ThirdPartyAlert() InterThirdPartyAlertRepo {
 }
 func (e *entryRepo) Consul() InterConsulRepo {
 	return newConsulRepoInterface(e.db, e.g)
+}
+func (e *entryRepo) RCA() InterRCARepo {
+	return NewRCARepository(e.db)
 }

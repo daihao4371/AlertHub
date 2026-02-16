@@ -269,10 +269,15 @@ func (r *ApiRegistry) GetAllApiEndpoints() []ApiEndpoint {
 		{"/api/w8t/process-trace/ai-analysis", "PUT", "更新AI分析结果", "处理流程追踪"},
 		{"/api/w8t/process-trace/operation-logs", "GET", "获取操作日志列表", "处理流程追踪"},
 		{"/api/w8t/process-trace/statistics", "GET", "获取处理统计数据", "处理流程追踪"},
+
+		// RCA 根因分析
+		{"/api/w8t/rca/cluster", "POST", "执行告警聚类分析", "RCA根因分析"},
+		{"/api/w8t/rca/cluster/:id/commit", "POST", "提交用户反馈", "RCA根因分析"},
+		{"/api/w8t/rca/incidents", "GET", "查询RCA事件列表", "RCA根因分析"},
+		{"/api/w8t/rca/report", "GET", "获取RCA统计报告", "RCA根因分析"},
 	}
 }
 
-// RegisterToDatabase 将所有API接口注册到数据库
 func (r *ApiRegistry) RegisterToDatabase() error {
 	db := r.ctx.DB.DB()
 	endpoints := r.GetAllApiEndpoints()

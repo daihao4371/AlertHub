@@ -80,6 +80,9 @@ func NewDBClient(config DBConfig) *gorm.DB {
 		&models.ThirdPartyAlert{},          // 新增: 第三方告警记录表
 		&models.ConsulTarget{},             // 新增: Consul目标追踪表
 		&models.ConsulTargetOfflineLog{},   // 新增: Consul注销历史记录表
+		&models.RCASuggestion{},            // 新增: RCA 聚类建议表
+		&models.RCAIncident{},              // 新增: RCA 事件候选表
+		&models.RCAReportSnapshot{},        // 新增: RCA 统计报告表
 	)
 	if err != nil {
 		logc.Error(context.Background(), err.Error())

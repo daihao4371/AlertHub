@@ -11,6 +11,9 @@ type (
 		ChatCompletion(context.Context, string) (string, error)
 		// StreamCompletion returns a channel that streams the completion of the given input text.
 		StreamCompletion(context.Context, string) (<-chan string, error)
+		// ChatCompletionWithSchema returns structured JSON output matching the provided schema.
+		// schema 参数用于约束 AI 模型的输出格式（JSON Schema）
+		ChatCompletionWithSchema(context.Context, string, map[string]interface{}) (string, error)
 		// Check checks the health of the AI chatbot client.
 		Check(context.Context) error
 	}
