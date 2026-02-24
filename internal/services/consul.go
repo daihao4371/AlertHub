@@ -6,10 +6,13 @@ import (
 	consulclient "alertHub/pkg/consul"
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"github.com/zeromicro/go-zero/core/logc"
 )
 
@@ -34,6 +37,7 @@ type (
 
 		// 同步管理
 		SyncTargets(tenantId string) (interface{}, interface{})
+		SyncTargetsCronjob(ctx context.Context)
 
 		// 注销记录管理
 		GetOfflineLogs(tenantId string, page, pageSize int) (interface{}, interface{})
@@ -500,16 +504,28 @@ func (c *consulService) RegisterTarget(tenantId string, serviceID, serviceName, 
 	}, nil
 }
 
+// probeTargetHealth 探测目标实例是否可达（TCP 连接检测）
+// 用于同步时判断缺失的服务是否需要重新注册到 Consul
+// instance 格式为 "address:port"，如 "10.0.42.9:9100"
+func (c *consulService) probeTargetHealth(instance string, timeout time.Duration) bool {
+	conn, err := net.DialTimeout("tcp", instance, timeout)
+	if err != nil {
+		return false
+	}
+	conn.Close()
+	return true
+}
+
 // SyncTargets 同步 Consul 中的目标
+// 使用 Catalog + Health API 获取集群全局视图，包括不健康节点上的服务
+// 服务从 Consul 消失后标记为 "critical"（而非 "no checks"），确保机器恢复后自动恢复监控
 func (c *consulService) SyncTargets(tenantId string) (interface{}, interface{}) {
 	// 第一步：自动清理重复的目标记录（保留最新的那条）
-	// 这样可以修复数据库中已存在的重复记录问题
 	deletedCount, err := c.ctx.DB.Consul().CleanupDuplicateTargets(tenantId)
 	if err != nil {
-		// 记录日志但继续执行，清理失败不应该阻止同步
-		fmt.Printf("清理重复记录失败: %v\n", err)
+		logc.Errorf(context.Background(), "清理重复记录失败: %v", err)
 	} else if deletedCount > 0 {
-		fmt.Printf("同步前自动清理了 %d 条重复记录\n", deletedCount)
+		logc.Infof(context.Background(), "同步前自动清理了 %d 条重复记录", deletedCount)
 	}
 
 	// 第二步：从数据源系统中获取 Consul 配置
@@ -518,7 +534,6 @@ func (c *consulService) SyncTargets(tenantId string) (interface{}, interface{}) 
 		return nil, err
 	}
 
-	// 创建 Consul 客户端
 	consulConfig := consulclient.ClientConfig{
 		Address: config.Address,
 		Token:   config.Token,
@@ -528,24 +543,37 @@ func (c *consulService) SyncTargets(tenantId string) (interface{}, interface{}) 
 		return nil, fmt.Errorf("创建 Consul 客户端失败: %w", err)
 	}
 
-	// 获取 Consul 中的所有服务
-	consulServices, err := client.GetServices(context.Background())
+	// 第三步：通过 Catalog API 获取集群中所有服务名称
+	// Catalog API 能看到整个集群的服务，包括不健康节点上的
+	serviceNames, err := client.GetCatalogServiceNames(context.Background())
 	if err != nil {
-		return nil, fmt.Errorf("获取 Consul 服务列表失败: %w", err)
+		return nil, fmt.Errorf("获取 Catalog 服务列表失败: %w", err)
 	}
 
-	// 获取数据库中该租户的所有现有目标
+	// 第四步：遍历每个服务，通过 Health API 获取实例及健康状态
+	// consulServiceMap: serviceID → ServiceHealthEntry
+	consulServiceMap := make(map[string]consulclient.ServiceHealthEntry)
+	for _, serviceName := range serviceNames {
+		entries, err := client.GetServiceHealthEntries(context.Background(), serviceName)
+		if err != nil {
+			logc.Errorf(context.Background(), "获取服务 %s 的健康信息失败: %v", serviceName, err)
+			continue
+		}
+		for _, entry := range entries {
+			consulServiceMap[entry.ServiceID] = entry
+		}
+	}
+
+	// 第五步：获取数据库中该租户的所有非手动注销的目标
 	dbTargets, err := c.ctx.DB.Consul().GetAllTargetsByTenant(tenantId)
 	if err != nil {
 		return nil, fmt.Errorf("获取数据库目标列表失败: %w", err)
 	}
 
-	// 构建 Map 用于快速查找
-	// 如果存在重复记录，保留最新更新的那条（通过 UpdatedAt 判断）
+	// 构建 Map 用于快速查找，重复记录保留最新的
 	dbTargetMap := make(map[string]models.ConsulTarget)
 	for _, target := range dbTargets {
 		if existing, exists := dbTargetMap[target.ServiceID]; exists {
-			// 如果已存在该 ServiceID 的记录，比较更新时间，保留较新的
 			if target.UpdatedAt.After(existing.UpdatedAt) {
 				dbTargetMap[target.ServiceID] = target
 			}
@@ -554,40 +582,28 @@ func (c *consulService) SyncTargets(tenantId string) (interface{}, interface{}) 
 		}
 	}
 
-	// 用于标记 Consul 中存在的服务
-	consulServiceMap := make(map[string]bool)
-
 	// 收集需要批量操作的目标
 	toCreate := make([]models.ConsulTarget, 0)
 	toUpdate := make([]models.ConsulTarget, 0)
 
-	// 第一遍遍历：处理 Consul 中的服务
-	for serviceID, service := range consulServices {
-		consulServiceMap[serviceID] = true
-
-		// 构建 Labels（包含 Tags 和 Meta），使用 pkg 层的辅助函数
-		labels := consulclient.BuildLabelsFromTagsAndMeta(service.Tags, service.Meta)
+	// 第六步：对账 — 处理 Consul 中存在的服务
+	for serviceID, entry := range consulServiceMap {
+		labels := consulclient.BuildLabelsFromTagsAndMeta(entry.Tags, entry.Meta)
+		expectedInstance := c.buildInstanceFromAddressAndPort(entry.Address, entry.Port)
 
 		if dbTarget, exists := dbTargetMap[serviceID]; exists {
-			// 如果目标已被手动注销，跳过更新，不重新激活
-			if dbTarget.ConsulDeregistered {
-				continue
-			}
-
-			// 服务已存在，检查是否需要更新
-			// 需要更新的情况：实例地址变化、状态为 "no checks"、或 Tags/Meta 变化
+			// 服务在 DB 中已存在，检查是否需要更新
 			needUpdate := false
-			// 构建包含端口的 Instance 字符串
-			expectedInstance := c.buildInstanceFromAddressAndPort(service.Address, service.Port)
+
 			if dbTarget.Instance != expectedInstance {
 				dbTarget.Instance = expectedInstance
 				needUpdate = true
 			}
-			if dbTarget.Status == "no checks" {
-				dbTarget.Status = "passing"
+			// 用 Consul 健康检查的真实状态更新 DB 状态
+			if dbTarget.Status != entry.Status {
+				dbTarget.Status = entry.Status
 				needUpdate = true
 			}
-			// 检查 Labels 是否变化（比较 Tags 和 Meta）
 			if !c.labelsEqual(dbTarget.Labels, labels) {
 				dbTarget.Labels = labels
 				needUpdate = true
@@ -597,75 +613,135 @@ func (c *consulService) SyncTargets(tenantId string) (interface{}, interface{}) 
 				toUpdate = append(toUpdate, dbTarget)
 			}
 		} else {
-			// 新服务，创建新目标记录（使用 Consul 健康检查状态）
-			// 构建包含端口的 Instance 字符串
-			instance := c.buildInstanceFromAddressAndPort(service.Address, service.Port)
+			// 新服务，创建新目标记录
 			newTarget := models.ConsulTarget{
 				TenantId:    tenantId,
-				Instance:    instance,
-				Job:         service.Service,
+				Instance:    expectedInstance,
+				Job:         entry.ServiceName,
 				ServiceID:   serviceID,
-				ServiceName: service.Service,
-				Status:      "passing",
-				Labels:      labels, // 保存 Tags 和 Meta
+				ServiceName: entry.ServiceName,
+				Status:      entry.Status,
+				Labels:      labels,
 			}
 			toCreate = append(toCreate, newTarget)
 		}
 	}
 
-	// 第二遍遍历：收集需要标记删除的服务
-	// 注意：已手动注销的目标（DeregistrationTime != nil）不应被自动删除逻辑影响
-	// 通过 DeregistrationTime 是否为 nil 来区分手动注销和自动删除
-	toDeleteServiceIDs := make([]string, 0)
+	// 第七步：对账 — 处理 Consul 中不存在的服务
+	// 对于非手动注销的缺失目标：
+	//   1. TCP 探测机器是否可达
+	//   2. 可达 → 自动重新注册到 Consul → 标记为 passing
+	//   3. 不可达 → 标记为 critical
+	absentTargets := make([]models.ConsulTarget, 0)
 	for _, dbTarget := range dbTargets {
-		// 只处理以下条件的目标：
-		// 1. Consul 中不存在该服务
-		// 2. 状态不是 "no checks"
-		// 3. 不是手动注销的（DeregistrationTime == nil，说明从未手动注销过）
-		// 4. 不是已手动注销的（ConsulDeregistered == false，说明不是当前已注销状态）
-		if !consulServiceMap[dbTarget.ServiceID] &&
-			dbTarget.Status != "no checks" &&
-			dbTarget.DeregistrationTime == nil && // 从未手动注销过
-			!dbTarget.ConsulDeregistered { // 当前不是已注销状态
-			// 服务已从 Consul 中删除，需要标记为无检查状态（自动删除）
-			toDeleteServiceIDs = append(toDeleteServiceIDs, dbTarget.ServiceID)
+		if _, inConsul := consulServiceMap[dbTarget.ServiceID]; !inConsul {
+			absentTargets = append(absentTargets, dbTarget)
 		}
 	}
 
-	// 批量执行数据库操作
-	// 1. 批量创建新目标
+	toAbsentServiceIDs := make([]string, 0)
+	toReRegisteredIDs := make([]string, 0)
+
+	if len(absentTargets) > 0 {
+		var (
+			mu  sync.Mutex
+			wg  sync.WaitGroup
+			sem = make(chan struct{}, 20) // 并发限制：最多 20 个并发探测
+		)
+
+		for _, target := range absentTargets {
+			wg.Add(1)
+			sem <- struct{}{}
+			go func(t models.ConsulTarget) {
+				defer wg.Done()
+				defer func() { <-sem }()
+
+				// TCP 探测目标是否可达
+				if !c.probeTargetHealth(t.Instance, 2*time.Second) {
+					mu.Lock()
+					if t.Status != "critical" {
+						toAbsentServiceIDs = append(toAbsentServiceIDs, t.ServiceID)
+					}
+					mu.Unlock()
+					return
+				}
+
+				// 目标可达，尝试重新注册到 Consul
+				address, port, err := c.parseInstanceAddressAndPort(t.Instance)
+				if err != nil {
+					mu.Lock()
+					if t.Status != "critical" {
+						toAbsentServiceIDs = append(toAbsentServiceIDs, t.ServiceID)
+					}
+					mu.Unlock()
+					return
+				}
+
+				tags, meta := consulclient.ExtractTagsAndMetaFromLabels(t.Labels)
+				if err := client.RegisterService(
+					context.Background(),
+					t.ServiceID,
+					t.ServiceName,
+					address,
+					port,
+					tags,
+					meta,
+				); err != nil {
+					logc.Errorf(context.Background(), "自动重新注册服务 %s (%s) 失败: %v", t.ServiceID, t.Instance, err)
+					mu.Lock()
+					if t.Status != "critical" {
+						toAbsentServiceIDs = append(toAbsentServiceIDs, t.ServiceID)
+					}
+					mu.Unlock()
+					return
+				}
+
+				// 注册成功
+				mu.Lock()
+				if t.Status != "passing" {
+					toReRegisteredIDs = append(toReRegisteredIDs, t.ServiceID)
+				}
+				mu.Unlock()
+			}(target)
+		}
+
+		wg.Wait()
+
+		if len(toReRegisteredIDs) > 0 {
+			logc.Infof(context.Background(), "自动重新注册了 %d 个缺失的服务到 Consul", len(toReRegisteredIDs))
+		}
+	}
+
+	// 第八步：批量执行数据库操作
 	if len(toCreate) > 0 {
 		if err := c.ctx.DB.Consul().BatchCreateTargets(toCreate); err != nil {
 			return nil, fmt.Errorf("批量创建目标失败: %w", err)
 		}
 	}
-
-	// 2. 批量更新现有目标
 	if len(toUpdate) > 0 {
 		if err := c.ctx.DB.Consul().BatchUpdateTargets(toUpdate); err != nil {
 			return nil, fmt.Errorf("批量更新目标失败: %w", err)
 		}
 	}
-
-	// 3. 批量更新删除状态
-	if len(toDeleteServiceIDs) > 0 {
-		if err := c.ctx.DB.Consul().BatchUpdateDeletedTargets(tenantId, toDeleteServiceIDs); err != nil {
-			return nil, fmt.Errorf("批量更新删除状态失败: %w", err)
+	if len(toAbsentServiceIDs) > 0 {
+		if err := c.ctx.DB.Consul().BatchUpdateTargetStatusByServiceIDs(tenantId, toAbsentServiceIDs, "critical"); err != nil {
+			return nil, fmt.Errorf("批量更新离线状态失败: %w", err)
+		}
+	}
+	if len(toReRegisteredIDs) > 0 {
+		if err := c.ctx.DB.Consul().BatchUpdateTargetStatusByServiceIDs(tenantId, toReRegisteredIDs, "passing"); err != nil {
+			return nil, fmt.Errorf("批量更新重新注册状态失败: %w", err)
 		}
 	}
 
-	// 统计操作结果
-	newTargetsCount := len(toCreate)
-	updatedTargetsCount := len(toUpdate)
-	deletedTargetsCount := len(toDeleteServiceIDs)
-
 	return map[string]interface{}{
 		"syncTime":              time.Now(),
-		"cleanedDuplicateCount": deletedCount,        // 清理的重复记录数
-		"newTargetsCount":       newTargetsCount,     // 新创建的记录数
-		"updatedTargetsCount":   updatedTargetsCount, // 更新的记录数
-		"deletedTargetsCount":   deletedTargetsCount, // 标记删除的记录数
-		"totalTargetsCount":     len(consulServices), // Consul 中的服务总数
+		"cleanedDuplicateCount": deletedCount,
+		"newTargetsCount":       len(toCreate),
+		"updatedTargetsCount":   len(toUpdate),
+		"absentTargetsCount":    len(toAbsentServiceIDs),
+		"reRegisteredCount":     len(toReRegisteredIDs),
+		"totalTargetsCount":     len(consulServiceMap),
 	}, nil
 }
 
@@ -873,4 +949,62 @@ func (c *consulService) GetOfflineLogs(tenantId string, page, pageSize int) (int
 		"pageSize": pageSize,
 		"list":     logList,
 	}, nil
+}
+
+// SyncTargetsCronjob 定时同步 Consul 目标的后台任务
+// 参考 LDAP SyncUsersCronjob 模式，支持 context 取消
+// 自动查询所有配置了 Consul 数据源的租户，按 SyncInterval 周期执行同步
+func (c *consulService) SyncTargetsCronjob(ctx context.Context) {
+	// 查询所有 Consul 数据源，获取租户列表和同步间隔
+	dataSources, err := c.ctx.DB.Datasource().List("", "", "consul", "")
+	if err != nil || len(dataSources) == 0 {
+		logc.Infof(ctx, "未找到 Consul 数据源配置，跳过定时同步")
+		return
+	}
+
+	// 收集需要同步的租户 ID（去重）
+	tenantIds := make([]string, 0)
+	seen := make(map[string]bool)
+	for _, ds := range dataSources {
+		if ds.TenantId != "" && !seen[ds.TenantId] {
+			seen[ds.TenantId] = true
+			tenantIds = append(tenantIds, ds.TenantId)
+		}
+	}
+
+	// 取第一个数据源的 SyncInterval 作为全局同步间隔，默认 60 秒
+	syncInterval := dataSources[0].ConsulConfig.SyncInterval
+	if syncInterval < 10 {
+		syncInterval = 60
+	}
+	if syncInterval > 3600 {
+		syncInterval = 3600
+	}
+
+	// 将秒数转换为 cron 表达式: "@every Xs"
+	cronSpec := fmt.Sprintf("@every %ds", syncInterval)
+	logc.Infof(ctx, "Consul 目标定时同步已启动，间隔: %d 秒，租户数: %d", syncInterval, len(tenantIds))
+
+	cronJob := cron.New()
+	_, err = cronJob.AddFunc(cronSpec, func() {
+		for _, tenantId := range tenantIds {
+			if _, syncErr := c.SyncTargets(tenantId); syncErr != nil {
+				logc.Errorf(ctx, "Consul 定时同步失败 (租户: %s): %v", tenantId, syncErr)
+			}
+		}
+	})
+	if err != nil {
+		logc.Errorf(ctx, "创建 Consul 定时同步任务失败: %v", err)
+		return
+	}
+
+	cronJob.Start()
+	defer cronJob.Stop()
+
+	// 阻塞等待 context 取消信号
+	select {
+	case <-ctx.Done():
+		logc.Infof(ctx, "Consul 目标定时同步已停止")
+		return
+	}
 }

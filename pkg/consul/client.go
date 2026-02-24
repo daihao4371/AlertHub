@@ -80,6 +80,13 @@ type ServiceInstance struct {
 	Meta        map[string]string
 }
 
+// ServiceHealthEntry 服务实例信息及其聚合健康状态
+// 用于 Catalog API 同步场景，包含 Consul 健康检查的聚合结果
+type ServiceHealthEntry struct {
+	ServiceInstance
+	Status string // 聚合健康状态: "passing" / "warning" / "critical"
+}
+
 // GetServiceInstances 获取指定服务的所有实例
 func (c *Client) GetServiceInstances(ctx context.Context, serviceName string) ([]ServiceInstance, error) {
 	// 使用 Health 接口获取健康的实例
@@ -314,6 +321,79 @@ func (c *Client) FilterServiceInstancesByTag(instances []ServiceInstance, tag st
 	}
 
 	return filtered
+}
+
+// GetCatalogServiceNames 通过 Catalog API 获取集群中所有服务名称
+// 与 Agent API 不同，Catalog API 能看到整个集群的服务（包括不健康节点上的）
+func (c *Client) GetCatalogServiceNames(ctx context.Context) ([]string, error) {
+	catalogServices, _, err := c.client.Catalog().Services(nil)
+	if err != nil {
+		return nil, fmt.Errorf("获取 Catalog 服务列表失败: %w", err)
+	}
+
+	var names []string
+	for name := range catalogServices {
+		// 过滤掉 Consul 自身的内部服务
+		if name == "consul" {
+			continue
+		}
+		names = append(names, name)
+	}
+
+	return names, nil
+}
+
+// GetServiceHealthEntries 通过 Health API 获取指定服务的所有实例及聚合健康状态
+// passingOnly=false 确保包含不健康的实例，避免宕机节点的服务记录丢失
+func (c *Client) GetServiceHealthEntries(ctx context.Context, serviceName string) ([]ServiceHealthEntry, error) {
+	entries, _, err := c.client.Health().Service(serviceName, "", false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("获取服务 %s 的健康信息失败: %w", serviceName, err)
+	}
+
+	var results []ServiceHealthEntry
+	for _, entry := range entries {
+		status := aggregateCheckStatus(entry.Checks)
+		results = append(results, ServiceHealthEntry{
+			ServiceInstance: ServiceInstance{
+				ServiceID:   entry.Service.ID,
+				ServiceName: entry.Service.Service,
+				Address:     entry.Service.Address,
+				Port:        entry.Service.Port,
+				Tags:        entry.Service.Tags,
+				Meta:        entry.Service.Meta,
+			},
+			Status: status,
+		})
+	}
+
+	return results, nil
+}
+
+// aggregateCheckStatus 从多个健康检查中聚合出最终状态
+// Consul Health API 返回的 Status 只有三种: passing / warning / critical
+// 聚合规则：任一 critical → critical，任一 warning → warning，否则 passing
+// 如果没有任何检查（Checks 为空），Consul 默认视为 passing
+func aggregateCheckStatus(checks consulapi.HealthChecks) string {
+	hasCritical := false
+	hasWarning := false
+
+	for _, check := range checks {
+		switch check.Status {
+		case "critical":
+			hasCritical = true
+		case "warning":
+			hasWarning = true
+		}
+	}
+
+	if hasCritical {
+		return "critical"
+	}
+	if hasWarning {
+		return "warning"
+	}
+	return "passing"
 }
 
 // BuildLabelsFromTagsAndMeta 将 Consul 服务的 Tags 和 Meta 合并到 Labels map 中

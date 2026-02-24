@@ -29,7 +29,7 @@ type (
 		// 批量操作（用于性能优化）
 		BatchCreateTargets(targets []models.ConsulTarget) error
 		BatchUpdateTargets(targets []models.ConsulTarget) error
-		BatchUpdateDeletedTargets(tenantId string, serviceIDs []string) error
+		BatchUpdateTargetStatusByServiceIDs(tenantId string, serviceIDs []string, status string) error
 
 		// 标签相关操作
 		GetTargetsByTag(tenantId string, tag string, page, pageSize int) ([]models.ConsulTarget, int64, error)
@@ -151,11 +151,13 @@ func (c consulRepo) BatchDeleteTargets(tenantId string, instances []string) erro
 	return err
 }
 
-// GetAllTargetsByTenant 获取租户下所有未注销的目标
+// GetAllTargetsByTenant 获取租户下所有非手动注销的目标
+// 包含所有状态（passing/warning/critical/no checks），仅排除手动注销的记录
+// 这样同步时能看到所有目标，避免 "no checks" 记录被遗漏导致恢复路径断裂
 func (c consulRepo) GetAllTargetsByTenant(tenantId string) ([]models.ConsulTarget, error) {
 	var targets []models.ConsulTarget
 	err := c.db.Model(&models.ConsulTarget{}).
-		Where("tenant_id = ? AND status != ? AND consul_deregistered = ?", tenantId, "no checks", false).
+		Where("tenant_id = ? AND consul_deregistered = ?", tenantId, false).
 		Find(&targets).Error
 
 	return targets, err
@@ -181,6 +183,7 @@ func (c consulRepo) BatchCreateTargets(targets []models.ConsulTarget) error {
 	for i := range targets {
 		targets[i].CreatedAt = now
 		targets[i].UpdatedAt = now
+		targets[i].LastSeenAt = &now
 	}
 
 	// 分批处理目标记录以优化数据库性能
@@ -196,7 +199,7 @@ func (c consulRepo) BatchCreateTargets(targets []models.ConsulTarget) error {
 		err := c.db.Model(&models.ConsulTarget{}).
 			Clauses(clause.OnConflict{
 				Columns:   []clause.Column{{Name: "tenant_id"}, {Name: "service_id"}},
-				DoUpdates: clause.AssignmentColumns([]string{"instance", "job", "labels", "status", "service_name", "consul_deregistered", "updated_at"}),
+				DoUpdates: clause.AssignmentColumns([]string{"instance", "job", "labels", "status", "service_name", "consul_deregistered", "last_seen_at", "updated_at"}),
 			}).
 			Create(&batch).Error
 
@@ -230,9 +233,10 @@ func (c consulRepo) BatchUpdateTargets(targets []models.ConsulTarget) error {
 	// 在事务中执行所有更新
 	for _, target := range targets {
 		updateFields := map[string]interface{}{
-			"instance":   target.Instance,
-			"status":     target.Status,
-			"updated_at": now,
+			"instance":     target.Instance,
+			"status":       target.Status,
+			"last_seen_at": now,
+			"updated_at":   now,
 		}
 
 		// 更新 Labels 字段（即使为空也要更新，用于清空之前的数据）
@@ -266,15 +270,13 @@ func (c consulRepo) BatchUpdateTargets(targets []models.ConsulTarget) error {
 	return nil
 }
 
-// BatchUpdateDeletedTargets 批量更新已删除的目标状态，用于优化同步性能
-// 将 Consul 中不存在的服务标记为 "no checks" 状态
-// 注意：自动删除不会设置 consul_deregistered 和 deregistration_time，以区分手动注销和自动删除
-func (c consulRepo) BatchUpdateDeletedTargets(tenantId string, serviceIDs []string) error {
+// BatchUpdateTargetStatusByServiceIDs 按 ServiceID 批量更新目标状态
+// 用于同步时设置缺失目标为 "critical" 或重新注册成功的目标为 "passing"
+func (c consulRepo) BatchUpdateTargetStatusByServiceIDs(tenantId string, serviceIDs []string, status string) error {
 	if len(serviceIDs) == 0 {
 		return nil
 	}
 
-	// 分批处理以避免 SQL 语句过长
 	now := time.Now()
 	for i := 0; i < len(serviceIDs); i += consulBatchSize {
 		end := i + consulBatchSize
@@ -283,16 +285,20 @@ func (c consulRepo) BatchUpdateDeletedTargets(tenantId string, serviceIDs []stri
 		}
 
 		batch := serviceIDs[i:end]
-		// 自动删除只设置状态，不设置 consul_deregistered 和 deregistration_time
-		// 这样可以通过 deregistration_time 是否为 nil 来区分手动注销和自动删除
+		updates := map[string]interface{}{
+			"status":     status,
+			"updated_at": now,
+		}
+		// 重新注册成功的目标同时更新 last_seen_at
+		if status == "passing" {
+			updates["last_seen_at"] = now
+		}
+
 		err := c.db.Model(&models.ConsulTarget{}).
 			Where("tenant_id = ? AND service_id IN ?", tenantId, batch).
-			Updates(map[string]interface{}{
-				"status":     "no checks",
-				"updated_at": now,
-			}).Error
+			Updates(updates).Error
 		if err != nil {
-			return fmt.Errorf("批量更新删除状态失败 (批次 %d-%d): %w", i, end-1, err)
+			return fmt.Errorf("批量更新目标状态失败 (批次 %d-%d, status=%s): %w", i, end-1, status, err)
 		}
 	}
 
