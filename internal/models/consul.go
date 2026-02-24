@@ -14,6 +14,7 @@ type ConsulTarget struct {
 	Status             string                 `gorm:"type:varchar(64)" json:"status"`                      // 状态: "passing" (正常) / "warning" (警告) / "critical" (严重) / "no checks" (无检查)
 	ConsulDeregistered bool                   `gorm:"column:consul_deregistered" json:"consulDeregistered"` // 是否已从 Consul 中删除
 	DeregistrationTime *time.Time             `json:"deregistrationTime"`                                   // 注销时间戳
+	LastSeenAt         *time.Time             `json:"lastSeenAt"`                                            // 最后一次在 Consul 中被发现的时间
 	CreatedAt          time.Time              `json:"createdAt"`
 	UpdatedAt          time.Time              `json:"updatedAt"`
 }

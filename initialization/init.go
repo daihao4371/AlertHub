@@ -61,6 +61,9 @@ func InitBasic() {
 	// 加载静默规则
 	go pushMuteRuleToRedis()
 
+	// 定时任务，Consul 目标自动同步
+	go consulSyncScheduler(ctx)
+
 	r, err := ctx.DB.Setting().Get()
 	if err != nil {
 		logc.Error(ctx.Ctx, fmt.Sprintf("加载系统设置失败: %s", err.Error()))
@@ -207,4 +210,12 @@ func exporterMonitorScheduler(ctx *ctx.Context) {
 	exporter.SetGlobalScheduler(scheduler)
 
 	logc.Info(ctx.Ctx, "Exporter 巡检调度器启动成功")
+}
+
+// consulSyncScheduler Consul 目标定时同步调度器
+// 根据 Consul 数据源配置的 SyncInterval 自动同步 Consul 服务状态到数据库
+func consulSyncScheduler(ctx *ctx.Context) {
+	c, cancel := context.WithCancel(context.Background())
+	ctx.ContextMap["ConsulSyncJob"] = cancel
+	services.ConsulService.SyncTargetsCronjob(c)
 }
