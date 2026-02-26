@@ -115,7 +115,9 @@ func (c consulRepo) GetTargets(tenantId string, filters map[string]interface{}, 
 		db = db.Where("status = ?", status)
 	}
 	if keyword, ok := filters["keyword"]; ok && keyword != "" {
-		db = db.Where("instance LIKE ?", "%"+keyword.(string)+"%")
+		// 同时搜索实例地址、Job 名称和服务名称，与前端搜索框提示保持一致
+		keywordStr := "%" + keyword.(string) + "%"
+		db = db.Where("(instance LIKE ? OR job LIKE ? OR service_name LIKE ?)", keywordStr, keywordStr, keywordStr)
 	}
 
 	// 获取总数
