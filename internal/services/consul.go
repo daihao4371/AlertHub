@@ -138,6 +138,8 @@ func (c *consulService) GetAllTargets(tenantId string, filters map[string]interf
 	}
 
 	var passingCount, warningCount, criticalCount, noChecksCount int
+	// 同时提取所有不重复的 Job 名称，用于前端下拉筛选（避免只从当前页提取导致遗漏）
+	uniqueJobsMap := make(map[string]bool)
 	for _, t := range allTargets {
 		switch t.Status {
 		case "passing":
@@ -149,6 +151,14 @@ func (c *consulService) GetAllTargets(tenantId string, filters map[string]interf
 		case "no checks":
 			noChecksCount++
 		}
+		if t.Job != "" {
+			uniqueJobsMap[t.Job] = true
+		}
+	}
+
+	uniqueJobs := make([]string, 0, len(uniqueJobsMap))
+	for job := range uniqueJobsMap {
+		uniqueJobs = append(uniqueJobs, job)
 	}
 
 	// 计算可用率（基于 passing 状态）
@@ -183,6 +193,7 @@ func (c *consulService) GetAllTargets(tenantId string, filters map[string]interf
 			"downCount":        criticalCount,
 			"offlineCount":     noChecksCount,
 			"availabilityRate": availabilityRate,
+			"uniqueJobs":       uniqueJobs,
 		},
 	}, nil
 }
